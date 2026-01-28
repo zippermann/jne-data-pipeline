@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    container_name: jne-postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jne_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jne_secure_password_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-jne_dashboard}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data between container restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Initialize database with SQL scripts
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jne_user} -d ${POSTGRES_DB:-jne_dashboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jne-network
+
+  # pgAdmin - Web-based PostgreSQL management
+  pgadmin:
+    container_name: jne-pgadmin
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@jne.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jne-network
+
+# Persistent storage volumes
+volumes:
+  postgres_data:
+    name: jne-postgres-data
+  pgadmin_data:
+    name: jne-pgadmin-data
+
+# Docker network for service communication
+networks:
+  jne-network:
+    name: jne-pipeline-network
+    driver: bridge
