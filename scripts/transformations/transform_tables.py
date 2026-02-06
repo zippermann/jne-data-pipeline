@@ -230,8 +230,9 @@ def transform_cms_cnote(engine):
 def transform_unified_shipments(engine):
     """
     Transform the unified shipment table from staging.
-    - Extracts manifest type (OM/TM/IM) from manifest number
-    - Computes transit-related flags
+    - Manifest types are already pivoted into columns (OM/TM1/TM2/IM/HM)
+    - Computes manifest count and has_transit flag
+    - Standardizes dates
     - Adds DQ flags
     """
     logger.info("Transforming unified_shipments...")
@@ -240,14 +241,15 @@ def transform_unified_shipments(engine):
     df = pd.read_sql(query, engine)
     logger.info(f"  Loaded {len(df)} rows, {len(df.columns)} columns from staging")
 
-    # --- Manifest type extraction ---
-    # Manifest numbers follow patterns like CGK/OM/102689245 (outbound),
-    # XXX/TM/XXX (transit), XXX/IM/XXX (inbound)
-    if 'manifest_no' in df.columns:
-        df['manifest_type'] = df['manifest_no'].apply(_extract_manifest_type)
-    elif 'mfcnote_man_no' in [c.lower() for c in df.columns]:
-        man_col = [c for c in df.columns if c.lower() == 'mfcnote_man_no'][0]
-        df['manifest_type'] = df[man_col].apply(_extract_manifest_type)
+    # --- Manifest journey flags ---
+    # Manifest types are already pivoted in the SQL (OM/TM1/TM2/IM/HM columns).
+    # Add derived flags for quick analysis.
+    man_no_cols = [c for c in df.columns if c.lower().endswith('_man_no')]
+    if man_no_cols:
+        df['manifest_count'] = df[man_no_cols].notna().sum(axis=1)
+        tm1_col = [c for c in df.columns if c.lower() == 'tm1_man_no']
+        if tm1_col:
+            df['has_transit'] = df[tm1_col[0]].notna()
 
     # --- Standardize dates ---
     df = standardize_dates(df)
@@ -256,22 +258,6 @@ def transform_unified_shipments(engine):
     df = add_dq_flags(df)
 
     return write_transformed(df, 'unified_shipments', engine)
-
-
-def _extract_manifest_type(manifest_no):
-    """
-    Extract manifest type code from a manifest number.
-    Pattern: BRN/TYPE/SEQ  e.g. CGK/OM/102689245
-    Returns: 'OM', 'TM', 'IM', 'MTS', 'MTI', or None
-    """
-    if pd.isna(manifest_no) or not isinstance(manifest_no, str):
-        return None
-    parts = manifest_no.split('/')
-    if len(parts) >= 2:
-        mtype = parts[1].upper()
-        if mtype in ('OM', 'TM', 'IM', 'MTS', 'MTI'):
-            return mtype
-    return None
 
 
 def transform_lastmile_courier(engine):

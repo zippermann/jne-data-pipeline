@@ -11,6 +11,9 @@
 --   • CMS_CNOTE: explicit 59 kept columns (was cn.*)
 --   • Every other table: only kept columns (red columns dropped)
 --   • Column counts validated against metadata spreadsheet
+--   • MFCNOTE/MANIFEST pivoted by type: OM, TM1, TM2, IM, HM
+--     (was deduped-to-latest which only kept IM)
+--   • costm join fixed: now via costd.DMANIFEST_NO
 --
 -- TABLES IN UNIFICATION (34 of 37):
 -- --------------------------------------------------------
@@ -150,17 +153,59 @@ mhoundel_deduped AS (
     ) sub WHERE rn = 1
 ),
 
--- CMS_MFCNOTE: Multiple rows per CNOTE, keep latest
-mfcnote_deduped AS (
-    SELECT * FROM (
-        SELECT m.*, ROW_NUMBER() OVER (
-            PARTITION BY m.MFCNOTE_NO ORDER BY m.MFCNOTE_CRDATE DESC NULLS LAST
-        ) AS rn
-        FROM CMS_MFCNOTE m
-    ) sub WHERE rn = 1
+-- CMS_MFCNOTE: Classify each row by manifest type (OM/TM/IM/HM)
+-- and sequence within type (for TM which can repeat)
+mfcnote_typed AS (
+    SELECT
+        m.MFCNOTE_NO,
+        m.MFCNOTE_MAN_NO,
+        m.MFCNOTE_BAG_NO,
+        m.MFCNOTE_WEIGHT,
+        m.MFCNOTE_CRDATE,
+        UPPER(SPLIT_PART(m.MFCNOTE_MAN_NO, '/', 2)) AS MAN_TYPE,
+        ROW_NUMBER() OVER (
+            PARTITION BY m.MFCNOTE_NO, UPPER(SPLIT_PART(m.MFCNOTE_MAN_NO, '/', 2))
+            ORDER BY m.MFCNOTE_CRDATE ASC NULLS LAST
+        ) AS type_seq
+    FROM CMS_MFCNOTE m
+    WHERE m.MFCNOTE_MAN_NO IS NOT NULL
 ),
 
--- CMS_MANIFEST: Multiple rows per NO, keep latest by date
+-- CMS_MFCNOTE: Pivot to one row per CNOTE with columns per manifest type
+-- Types: OM (outbound), TM1/TM2 (transit hops), IM (inbound), HM (hub)
+mfcnote_pivoted AS (
+    SELECT
+        MFCNOTE_NO,
+        -- OM (Outbound Manifest)
+        MAX(CASE WHEN MAN_TYPE = 'OM' AND type_seq = 1 THEN MFCNOTE_MAN_NO END) AS OM_MAN_NO,
+        MAX(CASE WHEN MAN_TYPE = 'OM' AND type_seq = 1 THEN MFCNOTE_BAG_NO END) AS OM_BAG_NO,
+        MAX(CASE WHEN MAN_TYPE = 'OM' AND type_seq = 1 THEN MFCNOTE_WEIGHT END) AS OM_MFC_WEIGHT,
+        MAX(CASE WHEN MAN_TYPE = 'OM' AND type_seq = 1 THEN MFCNOTE_CRDATE END) AS OM_MFC_CRDATE,
+        -- TM1 (Transit Manifest #1 — earliest)
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 1 THEN MFCNOTE_MAN_NO END) AS TM1_MAN_NO,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 1 THEN MFCNOTE_BAG_NO END) AS TM1_BAG_NO,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 1 THEN MFCNOTE_WEIGHT END) AS TM1_MFC_WEIGHT,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 1 THEN MFCNOTE_CRDATE END) AS TM1_MFC_CRDATE,
+        -- TM2 (Transit Manifest #2)
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 2 THEN MFCNOTE_MAN_NO END) AS TM2_MAN_NO,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 2 THEN MFCNOTE_BAG_NO END) AS TM2_BAG_NO,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 2 THEN MFCNOTE_WEIGHT END) AS TM2_MFC_WEIGHT,
+        MAX(CASE WHEN MAN_TYPE = 'TM' AND type_seq = 2 THEN MFCNOTE_CRDATE END) AS TM2_MFC_CRDATE,
+        -- IM (Inbound Manifest)
+        MAX(CASE WHEN MAN_TYPE = 'IM' AND type_seq = 1 THEN MFCNOTE_MAN_NO END) AS IM_MAN_NO,
+        MAX(CASE WHEN MAN_TYPE = 'IM' AND type_seq = 1 THEN MFCNOTE_BAG_NO END) AS IM_BAG_NO,
+        MAX(CASE WHEN MAN_TYPE = 'IM' AND type_seq = 1 THEN MFCNOTE_WEIGHT END) AS IM_MFC_WEIGHT,
+        MAX(CASE WHEN MAN_TYPE = 'IM' AND type_seq = 1 THEN MFCNOTE_CRDATE END) AS IM_MFC_CRDATE,
+        -- HM (Hub Manifest)
+        MAX(CASE WHEN MAN_TYPE = 'HM' AND type_seq = 1 THEN MFCNOTE_MAN_NO END) AS HM_MAN_NO,
+        MAX(CASE WHEN MAN_TYPE = 'HM' AND type_seq = 1 THEN MFCNOTE_BAG_NO END) AS HM_BAG_NO,
+        MAX(CASE WHEN MAN_TYPE = 'HM' AND type_seq = 1 THEN MFCNOTE_WEIGHT END) AS HM_MFC_WEIGHT,
+        MAX(CASE WHEN MAN_TYPE = 'HM' AND type_seq = 1 THEN MFCNOTE_CRDATE END) AS HM_MFC_CRDATE
+    FROM mfcnote_typed
+    GROUP BY MFCNOTE_NO
+),
+
+-- CMS_MANIFEST: Dedupe by MANIFEST_NO (joined per type below)
 manifest_deduped AS (
     SELECT * FROM (
         SELECT m.*, ROW_NUMBER() OVER (
@@ -636,35 +681,106 @@ SELECT
     mhund.MHOUNDEL_SIGNDATE,
 
     -- ========================================
-    -- 17. CMS_MFCNOTE (5 of 20 — 15 excluded)
-    --     Kept: MFCNOTE_MAN_NO, MFCNOTE_BAG_NO,
-    --           MFCNOTE_NO, MFCNOTE_WEIGHT, MFCNOTE_CRDATE
+    -- 17-18. CMS_MFCNOTE × CMS_MANIFEST
+    --        Pivoted by manifest type (OM/TM1/TM2/IM/HM)
+    --        MFCNOTE: 4 kept cols × 5 types = 20
+    --        MANIFEST: 12 cols × 5 types = 60
     -- ========================================
-    mfc.MFCNOTE_MAN_NO,
-    mfc.MFCNOTE_BAG_NO,
-    mfc.MFCNOTE_NO         AS MFCNOTE_CNOTE_NO,
-    mfc.MFCNOTE_WEIGHT,
-    mfc.MFCNOTE_CRDATE,
 
-    -- ========================================
-    -- 18. CMS_MANIFEST (13 of 18 — 5 excluded)
-    --     Excluded: MANIFEST_RECALL_NO, MANIFEST_USER_AUDIT,
-    --              MANIFEST_TIME_AUDIT, MANIFEST_FORM_AUDIT,
-    --              MANIFEST_MODA
-    -- ========================================
-    man.MANIFEST_NO        AS MANIFEST_NO,
-    man.MANIFEST_DATE,
-    man.MANIFEST_ROUTE,
-    man.MANIFEST_FROM,
-    man.MANIFEST_THRU,
-    man.MANIFEST_NOTICE,
-    man.MANIFEST_APPROVED,
-    man.MANIFEST_ORIGIN,
-    man.MANIFEST_CODE,
-    man.MANIFEST_UID,
-    man.MANIFEST_CRDATE,
-    man.MANIFEST_CANCELED,
-    man.MANIFEST_CANCELED_UID,
+    -- OM (Outbound Manifest) — MFCNOTE
+    mfcp.OM_MAN_NO,
+    mfcp.OM_BAG_NO,
+    mfcp.OM_MFC_WEIGHT,
+    mfcp.OM_MFC_CRDATE,
+    -- OM — MANIFEST
+    man_om.MANIFEST_DATE         AS OM_MANIFEST_DATE,
+    man_om.MANIFEST_ROUTE        AS OM_MANIFEST_ROUTE,
+    man_om.MANIFEST_FROM         AS OM_MANIFEST_FROM,
+    man_om.MANIFEST_THRU         AS OM_MANIFEST_THRU,
+    man_om.MANIFEST_NOTICE       AS OM_MANIFEST_NOTICE,
+    man_om.MANIFEST_APPROVED     AS OM_MANIFEST_APPROVED,
+    man_om.MANIFEST_ORIGIN       AS OM_MANIFEST_ORIGIN,
+    man_om.MANIFEST_CODE         AS OM_MANIFEST_CODE,
+    man_om.MANIFEST_UID          AS OM_MANIFEST_UID,
+    man_om.MANIFEST_CRDATE       AS OM_MANIFEST_CRDATE,
+    man_om.MANIFEST_CANCELED     AS OM_MANIFEST_CANCELED,
+    man_om.MANIFEST_CANCELED_UID AS OM_MANIFEST_CANCELED_UID,
+
+    -- TM1 (Transit Manifest #1) — MFCNOTE
+    mfcp.TM1_MAN_NO,
+    mfcp.TM1_BAG_NO,
+    mfcp.TM1_MFC_WEIGHT,
+    mfcp.TM1_MFC_CRDATE,
+    -- TM1 — MANIFEST
+    man_tm1.MANIFEST_DATE         AS TM1_MANIFEST_DATE,
+    man_tm1.MANIFEST_ROUTE        AS TM1_MANIFEST_ROUTE,
+    man_tm1.MANIFEST_FROM         AS TM1_MANIFEST_FROM,
+    man_tm1.MANIFEST_THRU         AS TM1_MANIFEST_THRU,
+    man_tm1.MANIFEST_NOTICE       AS TM1_MANIFEST_NOTICE,
+    man_tm1.MANIFEST_APPROVED     AS TM1_MANIFEST_APPROVED,
+    man_tm1.MANIFEST_ORIGIN       AS TM1_MANIFEST_ORIGIN,
+    man_tm1.MANIFEST_CODE         AS TM1_MANIFEST_CODE,
+    man_tm1.MANIFEST_UID          AS TM1_MANIFEST_UID,
+    man_tm1.MANIFEST_CRDATE       AS TM1_MANIFEST_CRDATE,
+    man_tm1.MANIFEST_CANCELED     AS TM1_MANIFEST_CANCELED,
+    man_tm1.MANIFEST_CANCELED_UID AS TM1_MANIFEST_CANCELED_UID,
+
+    -- TM2 (Transit Manifest #2) — MFCNOTE
+    mfcp.TM2_MAN_NO,
+    mfcp.TM2_BAG_NO,
+    mfcp.TM2_MFC_WEIGHT,
+    mfcp.TM2_MFC_CRDATE,
+    -- TM2 — MANIFEST
+    man_tm2.MANIFEST_DATE         AS TM2_MANIFEST_DATE,
+    man_tm2.MANIFEST_ROUTE        AS TM2_MANIFEST_ROUTE,
+    man_tm2.MANIFEST_FROM         AS TM2_MANIFEST_FROM,
+    man_tm2.MANIFEST_THRU         AS TM2_MANIFEST_THRU,
+    man_tm2.MANIFEST_NOTICE       AS TM2_MANIFEST_NOTICE,
+    man_tm2.MANIFEST_APPROVED     AS TM2_MANIFEST_APPROVED,
+    man_tm2.MANIFEST_ORIGIN       AS TM2_MANIFEST_ORIGIN,
+    man_tm2.MANIFEST_CODE         AS TM2_MANIFEST_CODE,
+    man_tm2.MANIFEST_UID          AS TM2_MANIFEST_UID,
+    man_tm2.MANIFEST_CRDATE       AS TM2_MANIFEST_CRDATE,
+    man_tm2.MANIFEST_CANCELED     AS TM2_MANIFEST_CANCELED,
+    man_tm2.MANIFEST_CANCELED_UID AS TM2_MANIFEST_CANCELED_UID,
+
+    -- IM (Inbound Manifest) — MFCNOTE
+    mfcp.IM_MAN_NO,
+    mfcp.IM_BAG_NO,
+    mfcp.IM_MFC_WEIGHT,
+    mfcp.IM_MFC_CRDATE,
+    -- IM — MANIFEST
+    man_im.MANIFEST_DATE         AS IM_MANIFEST_DATE,
+    man_im.MANIFEST_ROUTE        AS IM_MANIFEST_ROUTE,
+    man_im.MANIFEST_FROM         AS IM_MANIFEST_FROM,
+    man_im.MANIFEST_THRU         AS IM_MANIFEST_THRU,
+    man_im.MANIFEST_NOTICE       AS IM_MANIFEST_NOTICE,
+    man_im.MANIFEST_APPROVED     AS IM_MANIFEST_APPROVED,
+    man_im.MANIFEST_ORIGIN       AS IM_MANIFEST_ORIGIN,
+    man_im.MANIFEST_CODE         AS IM_MANIFEST_CODE,
+    man_im.MANIFEST_UID          AS IM_MANIFEST_UID,
+    man_im.MANIFEST_CRDATE       AS IM_MANIFEST_CRDATE,
+    man_im.MANIFEST_CANCELED     AS IM_MANIFEST_CANCELED,
+    man_im.MANIFEST_CANCELED_UID AS IM_MANIFEST_CANCELED_UID,
+
+    -- HM (Hub Manifest) — MFCNOTE
+    mfcp.HM_MAN_NO,
+    mfcp.HM_BAG_NO,
+    mfcp.HM_MFC_WEIGHT,
+    mfcp.HM_MFC_CRDATE,
+    -- HM — MANIFEST
+    man_hm.MANIFEST_DATE         AS HM_MANIFEST_DATE,
+    man_hm.MANIFEST_ROUTE        AS HM_MANIFEST_ROUTE,
+    man_hm.MANIFEST_FROM         AS HM_MANIFEST_FROM,
+    man_hm.MANIFEST_THRU         AS HM_MANIFEST_THRU,
+    man_hm.MANIFEST_NOTICE       AS HM_MANIFEST_NOTICE,
+    man_hm.MANIFEST_APPROVED     AS HM_MANIFEST_APPROVED,
+    man_hm.MANIFEST_ORIGIN       AS HM_MANIFEST_ORIGIN,
+    man_hm.MANIFEST_CODE         AS HM_MANIFEST_CODE,
+    man_hm.MANIFEST_UID          AS HM_MANIFEST_UID,
+    man_hm.MANIFEST_CRDATE       AS HM_MANIFEST_CRDATE,
+    man_hm.MANIFEST_CANCELED     AS HM_MANIFEST_CANCELED,
+    man_hm.MANIFEST_CANCELED_UID AS HM_MANIFEST_CANCELED_UID,
 
     -- ========================================
     -- 19. CMS_DBAG_HO (10 of 10 — ALL KEPT)
@@ -1003,13 +1119,29 @@ LEFT JOIN dhoundel_deduped dhund
 LEFT JOIN mhoundel_deduped mhund
     ON dhund.DHOUNDEL_NO = mhund.MHOUNDEL_NO
 
--- 17. CMS_MFCNOTE (on CNOTE_NO → MFCNOTE_NO)
-LEFT JOIN mfcnote_deduped mfc
-    ON cn.CNOTE_NO = mfc.MFCNOTE_NO
+-- 17. CMS_MFCNOTE (pivoted by manifest type: OM/TM1/TM2/IM/HM)
+LEFT JOIN mfcnote_pivoted mfcp
+    ON cn.CNOTE_NO = mfcp.MFCNOTE_NO
 
--- 18. CMS_MANIFEST (via MFCNOTE_MAN_NO)
-LEFT JOIN manifest_deduped man
-    ON mfc.MFCNOTE_MAN_NO = man.MANIFEST_NO
+-- 18a. CMS_MANIFEST — Outbound (OM)
+LEFT JOIN manifest_deduped man_om
+    ON mfcp.OM_MAN_NO = man_om.MANIFEST_NO
+
+-- 18b. CMS_MANIFEST — Transit #1 (TM1)
+LEFT JOIN manifest_deduped man_tm1
+    ON mfcp.TM1_MAN_NO = man_tm1.MANIFEST_NO
+
+-- 18c. CMS_MANIFEST — Transit #2 (TM2)
+LEFT JOIN manifest_deduped man_tm2
+    ON mfcp.TM2_MAN_NO = man_tm2.MANIFEST_NO
+
+-- 18d. CMS_MANIFEST — Inbound (IM)
+LEFT JOIN manifest_deduped man_im
+    ON mfcp.IM_MAN_NO = man_im.MANIFEST_NO
+
+-- 18e. CMS_MANIFEST — Hub (HM)
+LEFT JOIN manifest_deduped man_hm
+    ON mfcp.HM_MAN_NO = man_hm.MANIFEST_NO
 
 -- 19. CMS_DBAG_HO (on CNOTE_NO)
 LEFT JOIN dbag_ho_deduped dbag
@@ -1051,9 +1183,9 @@ LEFT JOIN dstatus_deduped dst
 LEFT JOIN cost_dtransit_deduped costd
     ON cn.CNOTE_NO = costd.CNOTE_NO
 
--- 29. CMS_COST_MTRANSIT_AGEN (via MFCNOTE_MAN_NO)
+-- 29. CMS_COST_MTRANSIT_AGEN (via COST_DTRANSIT_AGEN manifest)
 LEFT JOIN cost_mtransit_deduped costm
-    ON mfc.MFCNOTE_MAN_NO = costm.MANIFEST_NO
+    ON costd.DMANIFEST_NO = costm.MANIFEST_NO
 
 -- 30. T_GOTO (1:1 on CNOTE_NO → AWB)
 LEFT JOIN T_GOTO gt
