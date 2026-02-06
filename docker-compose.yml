@@ -85,12 +85,15 @@ services:
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
       AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+      AIRFLOW__WEBSERVER__RBAC: True
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
+      - ./pipeline_config.py:/opt/airflow/pipeline_config.py:ro
+      - ./jne-audit-trail:/opt/airflow/jne-audit-trail:ro
     ports:
       - "8080:8080"
     command: webserver
@@ -117,6 +120,8 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./data:/opt/airflow/data
+      - ./pipeline_config.py:/opt/airflow/pipeline_config.py:ro
+      - ./jne-audit-trail:/opt/airflow/jne-audit-trail:ro
     command: scheduler
     networks:
       - jne-network
