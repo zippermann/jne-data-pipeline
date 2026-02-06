@@ -3,7 +3,8 @@ JNE Data Transformation Pipeline
 ==================================
 Step 2 of the ETL pipeline.
   Phase 1: Unification — joins all raw tables into staging.unified_shipments
-  Phase 2: Transformation — applies pandas transformations (date standardization, DQ flags, etc.)
+  Phase 2: Transformation — applies pandas transformations (date standardization,
+           column filtering, manifest transposition, DQ flags, etc.)
 
 The unification logic lives in an external SQL file (configured in pipeline_config.py).
 To change the unification logic, just edit that SQL file — no code changes needed here.
@@ -31,6 +32,7 @@ try:
         UNIFICATION_SQL_FILE,
         UNIFIED_TABLE_SCHEMA, UNIFIED_TABLE_NAME,
         SCHEMA_RAW, SCHEMA_STAGING, SCHEMA_TRANSFORMED, SCHEMA_AUDIT,
+        EXCLUDED_COLUMNS,
     )
 except ImportError:
     sys.path.insert(0, '/opt/airflow')
@@ -39,6 +41,7 @@ except ImportError:
         UNIFICATION_SQL_FILE,
         UNIFIED_TABLE_SCHEMA, UNIFIED_TABLE_NAME,
         SCHEMA_RAW, SCHEMA_STAGING, SCHEMA_TRANSFORMED, SCHEMA_AUDIT,
+        EXCLUDED_COLUMNS,
     )
 
 # Setup logging
@@ -47,6 +50,67 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def filter_columns(df, table_name):
+    """
+    Drop excluded columns from a DataFrame based on EXCLUDED_COLUMNS config.
+    Column matching is case-insensitive.
+    """
+    excluded = EXCLUDED_COLUMNS.get(table_name, [])
+    if not excluded:
+        return df
+
+    excluded_lower = {c.lower() for c in excluded}
+    cols_to_drop = [c for c in df.columns if c.lower() in excluded_lower]
+
+    if cols_to_drop:
+        df = df.drop(columns=cols_to_drop)
+        logger.info(f"  Dropped {len(cols_to_drop)} excluded columns from {table_name}")
+
+    return df
+
+
+def standardize_dates(df, date_columns=None):
+    """
+    Standardize date columns to datetime format.
+    If date_columns is None, auto-detect columns containing 'date' in their name.
+    """
+    if date_columns is None:
+        date_columns = [col for col in df.columns
+                        if 'date' in col.lower() or col.lower() in ['created_at', 'updated_at']]
+
+    for col in date_columns:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+
+    return df
+
+
+def add_dq_flags(df):
+    """Add standard data quality flag columns."""
+    df['dq_has_nulls'] = df.isnull().any(axis=1)
+    df['dq_check_date'] = datetime.now()
+    df['transformed_at'] = datetime.now()
+    return df
+
+
+def write_transformed(df, table_name, engine):
+    """Write a DataFrame to the transformed schema."""
+    df.to_sql(
+        name=table_name,
+        con=engine,
+        schema=SCHEMA_TRANSFORMED,
+        if_exists='replace',
+        index=False,
+        chunksize=1000
+    )
+    logger.info(f"  -> {len(df)} rows -> {SCHEMA_TRANSFORMED}.{table_name}")
+    return len(df)
 
 
 # ============================================================
@@ -59,7 +123,7 @@ def create_schemas(engine):
     with engine.begin() as conn:
         for schema in schemas:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
-    logger.info(f"✓ Schemas ready: {schemas}")
+    logger.info(f"Schemas ready: {schemas}")
 
 
 # ============================================================
@@ -76,7 +140,7 @@ def run_unification(engine, sql_file: str = None):
         <your SQL here>;
 
     To change the unification logic:
-      1. Edit the SQL file (default: jne-audit-trail/unify_jne_tables_v3.sql)
+      1. Edit the SQL file (default: jne-audit-trail/unify_jne_tables_v4.sql)
       2. Re-run this pipeline step
       That's it — no Python code changes needed.
 
@@ -126,7 +190,7 @@ def run_unification(engine, sql_file: str = None):
         ))
         row_count = result.fetchone()[0]
 
-    logger.info(f"✓ Created {UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME} with {row_count:,} rows")
+    logger.info(f"Created {UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME} with {row_count:,} rows")
     return row_count
 
 
@@ -136,62 +200,97 @@ def run_unification(engine, sql_file: str = None):
 # Each transformation function takes (engine) and returns row_count.
 # Register them in TRANSFORMATION_REGISTRY below.
 
-def standardize_dates(df, date_columns):
-    """Standardize date columns to datetime format."""
-    for col in date_columns:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors='coerce')
-    return df
-
 
 def transform_cms_cnote(engine):
     """
-    Transform CMS_CNOTE — Main shipment table.
-    Standardizes dates and adds data quality flags.
+    Transform CMS_CNOTE — Main shipment table (59 kept columns).
+    - Filters out excluded columns per metadata
+    - Standardizes date columns
+    - Adds data quality flags
     """
     logger.info("Transforming CMS_CNOTE...")
 
     query = f"SELECT * FROM {SCHEMA_RAW}.cms_cnote"
     df = pd.read_sql(query, engine)
+    logger.info(f"  Loaded {len(df)} rows, {len(df.columns)} columns from raw")
 
-    logger.info(f"  Loaded {len(df)} rows from {SCHEMA_RAW}.cms_cnote")
+    # Filter excluded columns
+    df = filter_columns(df, "CMS_CNOTE")
+    logger.info(f"  After filtering: {len(df.columns)} columns")
 
     # Standardize dates
-    date_cols = [col for col in df.columns
-                 if 'date' in col.lower() or col in ['created_at', 'updated_at']]
-    df = standardize_dates(df, date_cols)
+    df = standardize_dates(df)
 
-    # Add data quality flags
-    df['dq_has_nulls'] = df.isnull().any(axis=1)
-    df['dq_check_date'] = datetime.now()
-    df['transformed_at'] = datetime.now()
+    # Add DQ flags
+    df = add_dq_flags(df)
 
-    # Write to transformed schema
-    df.to_sql(
-        name='cms_cnote',
-        con=engine,
-        schema=SCHEMA_TRANSFORMED,
-        if_exists='replace',
-        index=False,
-        chunksize=1000
-    )
-
-    logger.info(f"  ✓ {len(df)} rows → {SCHEMA_TRANSFORMED}.cms_cnote")
-    return len(df)
+    return write_transformed(df, 'cms_cnote', engine)
 
 
-# ------------------------------------------------------------------
-# ADD YOUR TRANSFORMATION FUNCTIONS HERE
-# ------------------------------------------------------------------
-# Example:
-#
-# def transform_cms_manifest(engine):
-#     """Transform CMS_MANIFEST table."""
-#     df = pd.read_sql(f"SELECT * FROM {SCHEMA_RAW}.cms_manifest", engine)
-#     # ... your transformations ...
-#     df.to_sql('cms_manifest', con=engine, schema=SCHEMA_TRANSFORMED,
-#               if_exists='replace', index=False, chunksize=1000)
-#     return len(df)
+def transform_unified_shipments(engine):
+    """
+    Transform the unified shipment table from staging.
+    - Extracts manifest type (OM/TM/IM) from manifest number
+    - Computes transit-related flags
+    - Adds DQ flags
+    """
+    logger.info("Transforming unified_shipments...")
+
+    query = f"SELECT * FROM {UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME}"
+    df = pd.read_sql(query, engine)
+    logger.info(f"  Loaded {len(df)} rows, {len(df.columns)} columns from staging")
+
+    # --- Manifest type extraction ---
+    # Manifest numbers follow patterns like CGK/OM/102689245 (outbound),
+    # XXX/TM/XXX (transit), XXX/IM/XXX (inbound)
+    if 'manifest_no' in df.columns:
+        df['manifest_type'] = df['manifest_no'].apply(_extract_manifest_type)
+    elif 'mfcnote_man_no' in [c.lower() for c in df.columns]:
+        man_col = [c for c in df.columns if c.lower() == 'mfcnote_man_no'][0]
+        df['manifest_type'] = df[man_col].apply(_extract_manifest_type)
+
+    # --- Standardize dates ---
+    df = standardize_dates(df)
+
+    # --- Add DQ flags ---
+    df = add_dq_flags(df)
+
+    return write_transformed(df, 'unified_shipments', engine)
+
+
+def _extract_manifest_type(manifest_no):
+    """
+    Extract manifest type code from a manifest number.
+    Pattern: BRN/TYPE/SEQ  e.g. CGK/OM/102689245
+    Returns: 'OM', 'TM', 'IM', 'MTS', 'MTI', or None
+    """
+    if pd.isna(manifest_no) or not isinstance(manifest_no, str):
+        return None
+    parts = manifest_no.split('/')
+    if len(parts) >= 2:
+        mtype = parts[1].upper()
+        if mtype in ('OM', 'TM', 'IM', 'MTS', 'MTI'):
+            return mtype
+    return None
+
+
+def transform_lastmile_courier(engine):
+    """
+    Transform LASTMILE_COURIER — filter PII and vacant columns per metadata.
+    """
+    logger.info("Transforming LASTMILE_COURIER...")
+
+    query = f"SELECT * FROM {SCHEMA_RAW}.lastmile_courier"
+    df = pd.read_sql(query, engine)
+    logger.info(f"  Loaded {len(df)} rows, {len(df.columns)} columns from raw")
+
+    df = filter_columns(df, "LASTMILE_COURIER")
+    logger.info(f"  After filtering: {len(df.columns)} columns (PII/vacant removed)")
+
+    df = standardize_dates(df)
+    df = add_dq_flags(df)
+
+    return write_transformed(df, 'lastmile_courier', engine)
 
 
 # ============================================================
@@ -203,8 +302,8 @@ def transform_cms_cnote(engine):
 
 TRANSFORMATION_REGISTRY = [
     ("cms_cnote", transform_cms_cnote),
-    # ("cms_manifest", transform_cms_manifest),   # ← uncomment when ready
-    # ("cms_cnote_pod", transform_cms_cnote_pod),  # ← add more as needed
+    ("unified_shipments", transform_unified_shipments),
+    ("lastmile_courier", transform_lastmile_courier),
 ]
 
 
@@ -261,7 +360,7 @@ def main():
             log_transformation(engine, f'{UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME}',
                                row_count, 'SUCCESS')
         except Exception as e:
-            logger.error(f"✗ Unification failed: {e}")
+            logger.error(f"Unification failed: {e}")
             log_transformation(engine, f'{UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME}',
                                0, 'FAILED')
             raise
@@ -280,9 +379,9 @@ def main():
         try:
             rows = transform_fn(engine)
             log_transformation(engine, table_name, rows, 'SUCCESS')
-            logger.info(f"  ✓ {table_name}: {rows} rows transformed")
+            logger.info(f"  {table_name}: {rows} rows transformed")
         except Exception as e:
-            logger.error(f"  ✗ {table_name} transformation failed: {e}")
+            logger.error(f"  {table_name} transformation failed: {e}")
             log_transformation(engine, table_name, 0, 'FAILED')
             # Continue with next transformation instead of crashing the whole pipeline
             continue
