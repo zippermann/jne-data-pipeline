@@ -41,14 +41,6 @@ except ImportError:
         SCHEMA_RAW, SCHEMA_STAGING, SCHEMA_TRANSFORMED, SCHEMA_AUDIT,
     )
 
-# Try to import audit logger (graceful fallback if not available)
-try:
-    from audit_logger import AuditLogger, AuditedJob
-    HAS_AUDIT = True
-except ImportError:
-    HAS_AUDIT = False
-    logging.warning("audit_logger not found — running without audit trail")
-
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,

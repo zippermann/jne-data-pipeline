@@ -15,7 +15,6 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 import logging
 from datetime import datetime
-import glob
 
 # Add project paths
 sys.path.append(str(Path(__file__).parent.parent / 'audit'))
@@ -23,7 +22,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from audit_logger import AuditLogger, AuditedJob
 
-# Import config — try relative import first, then absolute path
+# Import config
 try:
     from pipeline_config import (
         DB_CONN, CSV_DIR, EXCEL_FILE,
@@ -31,7 +30,6 @@ try:
         SCHEMA_RAW,
     )
 except ImportError:
-    # Fallback: config might be in /opt/airflow/ inside container
     sys.path.insert(0, '/opt/airflow')
     from pipeline_config import (
         DB_CONN, CSV_DIR, EXCEL_FILE,
@@ -57,15 +55,12 @@ def create_raw_schema(engine):
 def find_csv_file(csv_dir: str, table_name: str) -> str | None:
     """
     Find a CSV file for a given table name (case-insensitive).
-    Tries: table_name.csv, TABLE_NAME.csv, table_name.CSV, etc.
     Returns the full path if found, None otherwise.
     """
-    # Build a lookup of actual filenames in the directory
     if not os.path.isdir(csv_dir):
         logger.error(f"CSV directory not found: {csv_dir}")
         return None
 
-    # Case-insensitive match
     target = table_name.lower() + ".csv"
     for filename in os.listdir(csv_dir):
         if filename.lower() == target:
@@ -112,7 +107,7 @@ def load_csv_tables(engine, audit_logger: AuditLogger, csv_dir: str):
             try:
                 logger.info(f"Loading CSV: {os.path.basename(csv_path)} → raw.{table_name.lower()}")
 
-                df = pd.read_csv(csv_path, low_memory=False)
+                df = pd.read_csv(csv_path, low_memory=False, on_bad_lines='warn')
                 record_count = len(df)
 
                 # Clean column names (lowercase for PostgreSQL)
@@ -133,26 +128,25 @@ def load_csv_tables(engine, audit_logger: AuditLogger, csv_dir: str):
                 logger.info(f"  ✓ {record_count} records → raw.{pg_table}")
                 total_records += record_count
                 tables_loaded += 1
+
+                # Track counts via AuditedJob
+                job.increment_processed(record_count)
                 job.increment_success(record_count)
 
-                # Log source stats
-                audit_logger.log_source_stats(
-                    job_log_id=job.job_log_id,
-                    source_table=pg_table,
-                    total_rows=record_count,
-                    loaded_rows=record_count,
-                    status='SUCCESS'
+                # Log lineage: CSV file → raw table
+                audit_logger.log_lineage(
+                    source_table=os.path.basename(csv_path),
+                    target_table=f"{SCHEMA_RAW}.{pg_table}",
+                    operation_type='LOAD',
+                    record_count=record_count,
+                    transformation_name='csv_to_raw',
+                    metadata={'source_format': 'CSV'}
                 )
 
             except Exception as e:
                 logger.error(f"  ✗ Failed to load {table_name}: {e}")
                 tables_failed += 1
-                audit_logger.log_error(
-                    job_log_id=job.job_log_id,
-                    error_message=str(e),
-                    source_table=table_name,
-                    severity='ERROR'
-                )
+                job.increment_failed(1)
 
     logger.info(f"\nCSV Load Summary: {tables_loaded} loaded, {tables_skipped} skipped, {tables_failed} failed, {total_records} total records")
     return tables_loaded, tables_failed, tables_skipped
@@ -204,6 +198,7 @@ def load_excel_lookup_tables(engine, audit_logger: AuditLogger, excel_file: str)
             if matched_sheet is None:
                 logger.warning(f"  ⚠ Sheet '{table_name}' not found in Excel — skipping")
                 tables_failed += 1
+                job.increment_failed(1)
                 continue
 
             try:
@@ -229,25 +224,24 @@ def load_excel_lookup_tables(engine, audit_logger: AuditLogger, excel_file: str)
                 logger.info(f"  ✓ {record_count} records → raw.{pg_table}")
                 total_records += record_count
                 tables_loaded += 1
+
+                job.increment_processed(record_count)
                 job.increment_success(record_count)
 
-                audit_logger.log_source_stats(
-                    job_log_id=job.job_log_id,
-                    source_table=pg_table,
-                    total_rows=record_count,
-                    loaded_rows=record_count,
-                    status='SUCCESS'
+                # Log lineage: Excel sheet → raw table
+                audit_logger.log_lineage(
+                    source_table=f"EXCEL:{matched_sheet}",
+                    target_table=f"{SCHEMA_RAW}.{pg_table}",
+                    operation_type='LOAD',
+                    record_count=record_count,
+                    transformation_name='excel_to_raw',
+                    metadata={'source_format': 'EXCEL', 'sheet_name': matched_sheet}
                 )
 
             except Exception as e:
                 logger.error(f"  ✗ Failed to load {table_name}: {e}")
                 tables_failed += 1
-                audit_logger.log_error(
-                    job_log_id=job.job_log_id,
-                    error_message=str(e),
-                    source_table=table_name,
-                    severity='ERROR'
-                )
+                job.increment_failed(1)
 
     logger.info(f"\nExcel Lookup Summary: {tables_loaded} loaded, {tables_failed} failed, {total_records} total records")
     return tables_loaded, tables_failed, 0
@@ -260,25 +254,50 @@ def verify_load(audit_logger: AuditLogger):
 
     logger.info(f"\nVerifying {len(all_expected)} tables in raw schema...")
 
+    tables_ok = 0
+    tables_missing = []
+
     with engine.connect() as conn:
         total_records = 0
-        missing = []
         for table in all_expected:
             try:
                 result = conn.execute(text(f"SELECT COUNT(*) FROM {SCHEMA_RAW}.{table}"))
                 count = result.fetchone()[0]
                 total_records += count
                 logger.info(f"  {table}: {count} records")
+                tables_ok += 1
             except Exception:
                 logger.warning(f"  {table}: MISSING")
-                missing.append(table)
+                tables_missing.append(table)
 
-    if missing:
-        logger.warning(f"\n⚠ Missing tables: {missing}")
+    if tables_missing:
+        logger.warning(f"\n⚠ Missing tables: {tables_missing}")
     else:
         logger.info(f"\n✓ All {len(all_expected)} tables verified. Total records: {total_records}")
 
-    return len(missing) == 0
+    # Log a quality check for the verification
+    try:
+        with AuditedJob(
+            audit_logger,
+            job_name="Post-Load Verification",
+            job_type="VERIFY",
+            pipeline_stage="DATA_UNIFICATION",
+        ) as job:
+            audit_logger.log_quality_check(
+                job_log_id=job.job_log_id,
+                check_name="Raw Table Completeness",
+                check_type="COMPLETENESS",
+                table_name=f"{SCHEMA_RAW}.*",
+                records_checked=len(all_expected),
+                records_passed=tables_ok,
+                records_failed=len(tables_missing),
+                status='PASS' if not tables_missing else 'FAIL',
+                actual_value=f"{tables_ok}/{len(all_expected)} tables present"
+            )
+    except Exception as e:
+        logger.warning(f"Could not log verification quality check: {e}")
+
+    return len(tables_missing) == 0
 
 
 def main():
