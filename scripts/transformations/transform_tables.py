@@ -25,6 +25,17 @@ from datetime import datetime
 sys.path.append(str(Path(__file__).parent.parent / 'audit'))
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
+# Import audit logger
+try:
+    from audit_logger import AuditLogger, audited_batch
+except ImportError:
+    try:
+        sys.path.insert(0, '/opt/airflow/scripts/audit')
+        from audit_logger import AuditLogger, audited_batch
+    except ImportError:
+        AuditLogger = None
+        audited_batch = None
+
 # Import config
 try:
     from pipeline_config import (
@@ -294,28 +305,36 @@ TRANSFORMATION_REGISTRY = [
 
 
 # ============================================================
-# LOGGING
+# AUDIT LOGGING
 # ============================================================
 
-def log_transformation(engine, table_name, row_count, status):
-    """Log a transformation result to the audit schema."""
+def get_audit_logger(engine):
+    """Get an AuditLogger instance, or None if unavailable."""
+    if AuditLogger is None:
+        return None
     try:
-        audit_data = {
-            'table_name': [table_name],
-            'row_count': [row_count],
-            'status': [status],
-            'timestamp': [datetime.now()]
-        }
-        df_audit = pd.DataFrame(audit_data)
-        df_audit.to_sql(
-            name='transformation_log',
-            con=engine,
-            schema=SCHEMA_AUDIT,
-            if_exists='append',
-            index=False
-        )
+        return AuditLogger(engine)
     except Exception as e:
-        logger.warning(f"  Could not write to audit.transformation_log: {e}")
+        logger.warning(f"Could not initialize AuditLogger: {e}")
+        return None
+
+
+def log_transformation(engine, table_name, row_count, status):
+    """Log a transformation result to audit.transformation_log."""
+    audit = get_audit_logger(engine)
+    if audit:
+        audit.log_transformation(table_name, row_count, status)
+    else:
+        # Fallback: direct insert via pandas
+        try:
+            df_audit = pd.DataFrame({
+                'table_name': [table_name], 'row_count': [row_count],
+                'status': [status], 'timestamp': [datetime.now()]
+            })
+            df_audit.to_sql(name='transformation_log', con=engine,
+                            schema=SCHEMA_AUDIT, if_exists='append', index=False)
+        except Exception as e:
+            logger.warning(f"  Could not write to audit.transformation_log: {e}")
 
 
 # ============================================================
@@ -338,17 +357,30 @@ def main():
 
     engine = create_engine(DB_CONN)
     create_schemas(engine)
+    audit = get_audit_logger(engine)
 
     # --- Phase 1: Unification ---
     if not args.skip_unification:
+        batch_id = audit.start_batch('Airflow (Unification)', 'DATA_UNIFICATION') if audit else None
         try:
             row_count = run_unification(engine, args.sql_file)
             log_transformation(engine, f'{UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME}',
                                row_count, 'SUCCESS')
+            if audit:
+                audit.complete_batch(batch_id, row_count, 'SUCCESS')
+                audit.log_trace(
+                    source_stage=f'PostgreSQL ({SCHEMA_RAW})',
+                    target_stage=f'PostgreSQL ({UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME})',
+                    transformation_logic='SQL: 36-table unification with manifest pivot',
+                    batch_id=batch_id,
+                    record_count=row_count,
+                )
         except Exception as e:
             logger.error(f"Unification failed: {e}")
             log_transformation(engine, f'{UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME}',
                                0, 'FAILED')
+            if audit:
+                audit.complete_batch(batch_id, 0, 'FAILED', str(e))
             raise
 
     if args.unification_only:
@@ -362,14 +394,28 @@ def main():
     logger.info("=" * 60)
 
     for table_name, transform_fn in TRANSFORMATION_REGISTRY:
+        batch_id = audit.start_batch(f'Airflow (Transform: {table_name})',
+                                     'DATA_TRANSFORMATION') if audit else None
         try:
             rows = transform_fn(engine)
             log_transformation(engine, table_name, rows, 'SUCCESS')
             logger.info(f"  {table_name}: {rows} rows transformed")
+            if audit:
+                audit.complete_batch(batch_id, rows, 'SUCCESS')
+                src = f'PostgreSQL ({SCHEMA_RAW})' if table_name != 'unified_shipments' \
+                    else f'PostgreSQL ({UNIFIED_TABLE_SCHEMA}.{UNIFIED_TABLE_NAME})'
+                audit.log_trace(
+                    source_stage=src,
+                    target_stage=f'PostgreSQL ({SCHEMA_TRANSFORMED}.{table_name})',
+                    transformation_logic='Pandas: column filter, date standardization, DQ flags',
+                    batch_id=batch_id,
+                    record_count=rows,
+                )
         except Exception as e:
             logger.error(f"  {table_name} transformation failed: {e}")
             log_transformation(engine, table_name, 0, 'FAILED')
-            # Continue with next transformation instead of crashing the whole pipeline
+            if audit:
+                audit.complete_batch(batch_id, 0, 'FAILED', str(e))
             continue
 
     logger.info("=" * 60)
