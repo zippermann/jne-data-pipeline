@@ -5,7 +5,7 @@ Central config for all pipeline scripts.
 Edit THIS file when you need to change table lists, paths, or data sources.
 
 Last updated: 2026-02-06
-Metadata source: (JNE) Column Business Metadata.xlsx
+Metadata source: (JNE) Column Business Metadata Fixed.xlsx
 """
 
 # ============================================================
@@ -92,8 +92,7 @@ EXCLUDED_TABLES = [
 # These are kept in raw for reference/debugging but do not appear in
 # staging.unified_shipments.
 EXCLUDED_FROM_UNIFICATION = [
-    "CMS_MHI_HOC",   # All columns excluded per metadata review
-    "CMS_DHI_HOC",   # Parent CMS_MHI_HOC excluded; table removed from join chain
+    # (none currently — MHI_HOC and DHI_HOC re-added per "Fixed" metadata)
 ]
 
 
@@ -125,7 +124,7 @@ SCHEMA_AUDIT = "audit"
 # Red-coloured columns in the metadata spreadsheet are excluded.
 # Only columns listed here are selected during unification.
 
-METADATA_FILE = "/opt/airflow/data/raw/(JNE) Column Business Metadata.xlsx"
+METADATA_FILE = "/opt/airflow/data/raw/(JNE) Column Business Metadata Fixed.xlsx"
 
 # Columns to EXCLUDE per table (red in metadata).
 # Tables not listed here keep all their columns.
@@ -241,7 +240,10 @@ EXCLUDED_COLUMNS = {
     "CMS_DHICNOTE": [
         "DHICNOTE_SEQ_NO",
     ],
-    "ORA_USER": [
-        "USER_CUST_ID", "USER_CUST_NAME",
+    "CMS_MHI_HOC": [
+        "MHI_COURIER",
+    ],
+    "CMS_DHI_HOC": [
+        "DHI_SEQ_NO", "DHI_SEQ_ONO", "DHI_DO",
     ],
 }
