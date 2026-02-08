@@ -1,12 +1,10 @@
 -- ============================================================
 -- JNE Tables Unification SQL Script (v4 - Metadata-Filtered)
 -- ============================================================
--- Source: (JNE) Column Business Metadata.xlsx
--- Date:   2026-02-06
+-- Source: (JNE) Column Business Metadata Fixed.xlsx
+-- Date:   2026-02-07
 --
 -- Changes from v3:
---   • Removed CMS_MHI_HOC  (FULLY EXCLUDED — all columns red)
---   • Removed CMS_DHI_HOC  (FULLY EXCLUDED — parent excluded)
 --   • Removed T_CROSSDOCK_AWD (no metadata / no CSV)
 --   • CMS_CNOTE: explicit 59 kept columns (was cn.*)
 --   • Every other table: only kept columns (red columns dropped)
@@ -14,8 +12,10 @@
 --   • MFCNOTE/MANIFEST pivoted by type: OM, TM1, TM2, IM, HM
 --     (was deduped-to-latest which only kept IM)
 --   • costm join fixed: now via costd.DMANIFEST_NO
+--   • CMS_MHI_HOC + CMS_DHI_HOC re-added (partial exclusions per Fixed metadata)
+--   • ORA_USER: all 10 columns now kept (USER_CUST_ID, USER_CUST_NAME restored)
 --
--- TABLES IN UNIFICATION (34 of 37):
+-- TABLES IN UNIFICATION (36 of 37):
 -- --------------------------------------------------------
 -- Core (5):      CMS_CNOTE, CMS_CNOTE_POD, CMS_CNOTE_AMO,
 --                CMS_APICUST, CMS_DROURATE
@@ -24,6 +24,7 @@
 -- Inbound (2):   CMS_DHICNOTE, CMS_MHICNOTE
 -- Outbound (2):  CMS_DHOCNOTE, CMS_MHOCNOTE
 -- Undelivered (2): CMS_DHOUNDEL_POD, CMS_MHOUNDEL_POD
+-- Handover (2):  CMS_DHI_HOC, CMS_MHI_HOC
 -- Manifest (2):  CMS_MFCNOTE, CMS_MANIFEST
 -- Bags (2):      CMS_DBAG_HO, CMS_DMBAG
 -- SJ Chain (3):  CMS_DSJ, CMS_MSJ, CMS_RDSJ
@@ -35,7 +36,7 @@
 -- Crossdock (1): T_GOTO
 --
 -- EXCLUDED FROM UNIFICATION:
---   CMS_MHI_HOC, CMS_DHI_HOC, T_CROSSDOCK_AWD
+--   T_CROSSDOCK_AWD
 -- ============================================================
 
 WITH
@@ -365,6 +366,26 @@ ora_zone_deduped AS (
     ) sub WHERE rn = 1
 ),
 
+-- CMS_DHI_HOC: Dedupe by CNOTE
+dhi_hoc_deduped AS (
+    SELECT * FROM (
+        SELECT d.*, ROW_NUMBER() OVER (
+            PARTITION BY d.DHI_CNOTE_NO ORDER BY d.CDATE DESC NULLS LAST
+        ) AS rn
+        FROM CMS_DHI_HOC d
+    ) sub WHERE rn = 1
+),
+
+-- CMS_MHI_HOC: Dedupe by NO
+mhi_hoc_deduped AS (
+    SELECT * FROM (
+        SELECT m.*, ROW_NUMBER() OVER (
+            PARTITION BY m.MHI_NO ORDER BY m.MHI_DATE DESC NULLS LAST
+        ) AS rn
+        FROM CMS_MHI_HOC m
+    ) sub WHERE rn = 1
+),
+
 -- ORA_USER: Dedupe by USER_ID
 ora_user_deduped AS (
     SELECT * FROM (
@@ -376,7 +397,7 @@ ora_user_deduped AS (
 )
 
 -- ============================================================
--- MAIN SELECT — 34 tables, kept columns only
+-- MAIN SELECT — 36 tables, kept columns only
 -- ============================================================
 SELECT
     -- ========================================
@@ -1040,22 +1061,50 @@ SELECT
     ora.ZONE_KELURAHAN     AS ORA_ZONE_KELURAHAN,
 
     -- ========================================
-    -- 34. ORA_USER (8 of 10 — 2 excluded)
-    --     Excluded: USER_CUST_ID, USER_CUST_NAME
+    -- 34. ORA_USER (10 of 10 — ALL KEPT)
     -- ========================================
     usr.USER_ID            AS ORA_USER_ID,
     usr.USER_NAME          AS ORA_USER_NAME,
+    usr.USER_CUST_ID       AS ORA_USER_CUST_ID,
+    usr.USER_CUST_NAME     AS ORA_USER_CUST_NAME,
     usr.USER_ZONE_CODE     AS ORA_USER_ZONE_CODE,
     usr.USER_ACTIVE        AS ORA_USER_ACTIVE,
     usr.USER_DATE          AS ORA_USER_DATE,
     usr.USER_ORIGIN        AS ORA_USER_ORIGIN,
     usr.USER_NIK           AS ORA_USER_NIK,
-    usr.USER_VACANT10      AS ORA_USER_VACANT10
+    usr.USER_VACANT10      AS ORA_USER_VACANT10,
+
+    -- ========================================
+    -- 35. CMS_DHI_HOC (6 of 9 — 3 excluded)
+    --     Excluded: DHI_SEQ_NO, DHI_SEQ_ONO, DHI_DO
+    -- ========================================
+    dhi.DHI_NO,
+    dhi.DHI_ONO,
+    dhi.DHI_CNOTE_NO       AS DHI_HOC_CNOTE_NO,
+    dhi.DHI_CNOTE_QTY,
+    dhi.CDATE              AS DHI_HOC_CDATE,
+    dhi.DHI_REMARKS,
+
+    -- ========================================
+    -- 36. CMS_MHI_HOC (11 of 12 — 1 excluded)
+    --     Excluded: MHI_COURIER
+    -- ========================================
+    mhi.MHI_NO             AS MHI_HOC_NO,
+    mhi.MHI_REF_NO,
+    mhi.MHI_DATE,
+    mhi.MHI_UID,
+    mhi.MHI_APPROVE,
+    mhi.MHI_BRANCH         AS MHI_HOC_BRANCH,
+    mhi.MHI_APPROVE_DATE,
+    mhi.MHI_REMARKS        AS MHI_HOC_REMARKS,
+    mhi.MHI_USER1,
+    mhi.MHI_USER2,
+    mhi.MHI_ZONE
 
 FROM CMS_CNOTE cn
 
 -- ============================================================
--- JOIN CHAIN (34 tables)
+-- JOIN CHAIN (36 tables)
 -- ============================================================
 
 -- 2. CMS_CNOTE_POD (1:1 on CNOTE_NO)
@@ -1206,5 +1255,13 @@ LEFT JOIN ora_zone_deduped ora
 -- 34. ORA_USER (via CNOTE_USER → USER_ID)
 LEFT JOIN ora_user_deduped usr
     ON cn.CNOTE_USER = usr.USER_ID
+
+-- 35. CMS_DHI_HOC (on CNOTE_NO)
+LEFT JOIN dhi_hoc_deduped dhi
+    ON cn.CNOTE_NO = dhi.DHI_CNOTE_NO
+
+-- 36. CMS_MHI_HOC (via DHI_NO)
+LEFT JOIN mhi_hoc_deduped mhi
+    ON dhi.DHI_NO = mhi.MHI_NO
 
 ;
