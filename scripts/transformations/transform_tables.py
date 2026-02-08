@@ -418,6 +418,28 @@ def main():
                 audit.complete_batch(batch_id, 0, 'FAILED', str(e))
             continue
 
+    # --- Phase 3: Audit Backfill ---
+    logger.info("=" * 60)
+    logger.info("PHASE 3: AUDIT BACKFILL")
+    logger.info("=" * 60)
+
+    if audit:
+        # Backfill change_log (Integrity) from CMS_DSTATUS
+        try:
+            change_count = audit.backfill_change_log()
+            logger.info(f"  change_log: {change_count} entries backfilled from CMS_DSTATUS")
+        except Exception as e:
+            logger.warning(f"  change_log backfill failed (non-fatal): {e}")
+
+        # Backfill per-AWB traceability from unified/transformed tables
+        try:
+            trace_count = audit.backfill_traceability()
+            logger.info(f"  data_traceability: {trace_count} per-AWB entries backfilled")
+        except Exception as e:
+            logger.warning(f"  traceability backfill failed (non-fatal): {e}")
+    else:
+        logger.info("  Skipping (no audit logger available)")
+
     logger.info("=" * 60)
     logger.info("Transformation Pipeline Complete!")
     logger.info("=" * 60)
