@@ -12,6 +12,28 @@
 CREATE SCHEMA IF NOT EXISTS audit;
 
 -- ============================================================
+-- CLEANUP: Drop legacy objects from old audit schema
+-- ============================================================
+DROP VIEW IF EXISTS audit.v_data_lineage_trace CASCADE;
+DROP VIEW IF EXISTS audit.v_data_quality_scorecard CASCADE;
+DROP VIEW IF EXISTS audit.v_pipeline_health_summary CASCADE;
+DROP VIEW IF EXISTS audit.v_shipment_current_status CASCADE;
+DROP VIEW IF EXISTS audit.v_shipment_journey CASCADE;
+DROP VIEW IF EXISTS audit.v_shipment_status_summary CASCADE;
+DROP VIEW IF EXISTS audit.v_tracking_daily_summary CASCADE;
+DROP VIEW IF EXISTS audit.v_transformation_summary CASCADE;
+
+DROP TABLE IF EXISTS audit.data_lineage CASCADE;
+DROP TABLE IF EXISTS audit.data_quality_log CASCADE;
+DROP TABLE IF EXISTS audit.etl_job_log CASCADE;
+DROP TABLE IF EXISTS audit.shipment_tracking CASCADE;
+DROP TABLE IF EXISTS audit.transformation_history CASCADE;
+DROP TABLE IF EXISTS audit.user_activity CASCADE;
+
+DROP FUNCTION IF EXISTS audit.start_etl_job(VARCHAR, VARCHAR, VARCHAR, JSONB) CASCADE;
+DROP FUNCTION IF EXISTS audit.complete_etl_job(BIGINT, VARCHAR, BIGINT, BIGINT, BIGINT, TEXT) CASCADE;
+
+-- ============================================================
 -- 1. TRACEABILITY (Data Journey Tracking)
 -- ============================================================
 -- Tracks how each record moves through pipeline stages.
