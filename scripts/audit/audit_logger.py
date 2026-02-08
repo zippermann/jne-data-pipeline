@@ -120,25 +120,80 @@ class AuditLogger:
         """
         Backfill change_log from raw.CMS_DSTATUS.
         Each row in DSTATUS is a status change for a CNOTE.
+        Clears previous backfill entries before re-inserting to avoid duplicates.
         """
         try:
             with self.engine.begin() as conn:
+                # Clear previous backfill entries
+                conn.execute(text(
+                    "DELETE FROM audit.change_log WHERE system_action = 'Legacy System (Backfill)'"
+                ))
                 result = conn.execute(text("""
                     INSERT INTO audit.change_log
                         (awb_number, status_after, system_action, captured_at)
                     SELECT
-                        CAST(DSTATUS_CNOTE_NO AS VARCHAR(50)),
-                        DSTATUS_STATUS,
+                        CAST(dstatus_cnote_no AS VARCHAR(50)),
+                        dstatus_status,
                         'Legacy System (Backfill)',
-                        COALESCE(DSTATUS_STATUS_DATE, CREATE_DATE, CURRENT_TIMESTAMP)
-                    FROM raw.CMS_DSTATUS
-                    WHERE DSTATUS_CNOTE_NO IS NOT NULL
-                    ON CONFLICT DO NOTHING
+                        COALESCE(dstatus_status_date, create_date, CURRENT_TIMESTAMP)
+                    FROM raw.cms_dstatus
+                    WHERE dstatus_cnote_no IS NOT NULL
                 """))
                 logger.info(f"Backfilled {result.rowcount} change_log entries from CMS_DSTATUS")
                 return result.rowcount
         except Exception as e:
             logger.warning(f"Backfill change_log failed (non-fatal): {e}")
+            return 0
+
+    def backfill_traceability(self):
+        """
+        Backfill per-AWB traceability entries from unified_shipments.
+        Creates trace records showing each AWB's journey: raw -> staging -> transformed.
+        Clears previous backfill entries before re-inserting.
+        """
+        try:
+            with self.engine.begin() as conn:
+                # Clear previous backfill entries
+                conn.execute(text(
+                    "DELETE FROM audit.data_traceability "
+                    "WHERE transformation_logic LIKE 'Backfill:%'"
+                ))
+                # Insert per-AWB trace: raw -> staging (unification)
+                result1 = conn.execute(text("""
+                    INSERT INTO audit.data_traceability
+                        (awb_number, source_stage, target_stage,
+                         transformation_logic, record_count)
+                    SELECT
+                        CAST(cnote_no AS VARCHAR(50)),
+                        'PostgreSQL (raw.cms_cnote)',
+                        'PostgreSQL (staging.unified_shipments)',
+                        'Backfill: 36-table SQL unification with manifest pivot',
+                        1
+                    FROM staging.unified_shipments
+                    WHERE cnote_no IS NOT NULL
+                """))
+                logger.info(f"Backfilled {result1.rowcount} traceability entries (raw -> staging)")
+
+                # Insert per-AWB trace: staging -> transformed
+                result2 = conn.execute(text("""
+                    INSERT INTO audit.data_traceability
+                        (awb_number, source_stage, target_stage,
+                         transformation_logic, record_count)
+                    SELECT
+                        CAST(cnote_no AS VARCHAR(50)),
+                        'PostgreSQL (staging.unified_shipments)',
+                        'PostgreSQL (transformed.unified_shipments)',
+                        'Backfill: Pandas date standardization, DQ flags, manifest counts',
+                        1
+                    FROM transformed.unified_shipments
+                    WHERE cnote_no IS NOT NULL
+                """))
+                logger.info(f"Backfilled {result2.rowcount} traceability entries (staging -> transformed)")
+
+                total = result1.rowcount + result2.rowcount
+                return total
+        except Exception as e:
+            logger.warning(f"Backfill traceability failed (non-fatal): {e}")
             return 0
 
     # ----------------------------------------------------------------
