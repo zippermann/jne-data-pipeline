@@ -112,19 +112,10 @@ services:
         condition: service_healthy
     environment:
       <<: *airflow-env
+      _AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
     volumes: *airflow-volumes
-    command: >
-      bash -c "
-        airflow db migrate &&
-        airflow users create
-          --username $${AIRFLOW_ADMIN_USER:-admin}
-          --password $${AIRFLOW_ADMIN_PASSWORD:-admin}
-          --firstname Admin
-          --lastname User
-          --role Admin
-          --email admin@jne.local || true &&
-        echo '--- Airflow init complete ---'
-      "
+    command: bash -c "airflow db migrate && airflow users create --username $$_AIRFLOW_ADMIN_USER --password $$_AIRFLOW_ADMIN_PASSWORD --firstname Admin --lastname User --role Admin --email admin@jne.local || true"
     restart: "no"
     networks:
       - jne-network
