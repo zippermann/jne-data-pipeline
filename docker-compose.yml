@@ -1,7 +1,29 @@
 version: '3.8'
 
+# ============================================================
+# Shared Airflow environment variables (reused via YAML anchor)
+# ============================================================
+x-airflow-env: &airflow-env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+  AIRFLOW__CORE__FERNET_KEY: ''
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+  AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+  AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+
+x-airflow-volumes: &airflow-volumes
+  - ./airflow/dags:/opt/airflow/dags
+  - ./airflow/logs:/opt/airflow/logs
+  - ./airflow/plugins:/opt/airflow/plugins
+  - ./scripts:/opt/airflow/scripts
+  - ./data:/opt/airflow/data
+  - ./pipeline_config.py:/opt/airflow/pipeline_config.py:ro
+  - ./jne-audit-trail:/opt/airflow/jne-audit-trail:ro
+
 services:
-  # PostgreSQL Database
+  # ============================================================
+  # PostgreSQL Database (data)
+  # ============================================================
   postgres:
     container_name: jne-postgres
     image: postgres:15-alpine
@@ -11,11 +33,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jne_secure_password_2024}
       POSTGRES_DB: ${POSTGRES_DB:-jne_dashboard}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      # Persist data between container restarts
       - postgres_data:/var/lib/postgresql/data
-      # Initialize database with SQL scripts
       - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jne_user} -d ${POSTGRES_DB:-jne_dashboard}"]
@@ -25,7 +45,9 @@ services:
     networks:
       - jne-network
 
-# Zookeeper (required for Kafka)
+  # ============================================================
+  # Zookeeper (required for Kafka)
+  # ============================================================
   zookeeper:
     container_name: jne-zookeeper
     image: confluentinc/cp-zookeeper:7.5.0
@@ -35,19 +57,21 @@ services:
     networks:
       - jne-network
 
+  # ============================================================
   # Kafka Broker
+  # ============================================================
   kafka:
     container_name: jne-kafka
     image: confluentinc/cp-kafka:7.5.0
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - "${KAFKA_PORT:-9092}:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://jne-kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://jne-kafka:29092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092}
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -55,7 +79,9 @@ services:
     networks:
       - jne-network
 
-  # Airflow PostgreSQL (separate from data DB)
+  # ============================================================
+  # Airflow PostgreSQL (metadata DB, separate from data DB)
+  # ============================================================
   airflow-postgres:
     container_name: jne-airflow-postgres
     image: postgres:15-alpine
@@ -65,68 +91,137 @@ services:
       POSTGRES_DB: airflow
     volumes:
       - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - jne-network
 
+  # ============================================================
+  # Airflow Init (one-shot: db migrate + create admin user)
+  # ============================================================
+  airflow-init:
+    container_name: jne-airflow-init
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    environment:
+      <<: *airflow-env
+    volumes: *airflow-volumes
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create
+          --username $${AIRFLOW_ADMIN_USER:-admin}
+          --password $${AIRFLOW_ADMIN_PASSWORD:-admin}
+          --firstname Admin
+          --lastname User
+          --role Admin
+          --email admin@jne.local || true &&
+        echo '--- Airflow init complete ---'
+      "
+    restart: "no"
+    networks:
+      - jne-network
+
+  # ============================================================
+  # Data Init (one-shot: load CSV/Excel + unify + transform)
+  # Runs automatically on first 'docker compose up'.
+  # Solves the chicken-and-egg: data is ready before Airflow DAGs run.
+  # ============================================================
+  data-init:
+    container_name: jne-data-init
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jne_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jne_secure_password_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-jne_dashboard}
+      DB_HOST: jne-postgres
+      DB_PORT: "5432"
+    volumes: *airflow-volumes
+    command: >
+      bash -c "
+        echo '============================================================' &&
+        echo 'JNE Data Init: Loading raw data + running unification...' &&
+        echo '============================================================' &&
+        python /opt/airflow/scripts/etl/load_data.py
+          --csv-dir /opt/airflow/data/raw/csv
+          --excel-file /opt/airflow/data/raw/JNE_RAW_COMBINED.xlsx &&
+        python /opt/airflow/scripts/transformations/transform_tables.py &&
+        echo '============================================================' &&
+        echo 'Data initialization complete!' &&
+        echo '============================================================'
+      "
+    restart: "no"
+    networks:
+      - jne-network
+
+  # ============================================================
   # Airflow Webserver
+  # ============================================================
   airflow-webserver:
     container_name: jne-airflow-webserver
     build:
       context: .
       dockerfile: Dockerfile.airflow
     depends_on:
-      - airflow-postgres
-      - postgres
-      - kafka
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
-      AIRFLOW__WEBSERVER__RBAC: True
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./scripts:/opt/airflow/scripts
-      - ./data:/opt/airflow/data
-      - ./pipeline_config.py:/opt/airflow/pipeline_config.py:ro
-      - ./jne-audit-trail:/opt/airflow/jne-audit-trail:ro
+      <<: *airflow-env
+      AIRFLOW__WEBSERVER__RBAC: "True"
+      POSTGRES_USER: ${POSTGRES_USER:-jne_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jne_secure_password_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-jne_dashboard}
+      DB_HOST: jne-postgres
+      DB_PORT: "5432"
+    volumes: *airflow-volumes
     ports:
-      - "8080:8080"
+      - "${AIRFLOW_PORT:-8080}:8080"
     command: webserver
     networks:
       - jne-network
 
+  # ============================================================
   # Airflow Scheduler
+  # ============================================================
   airflow-scheduler:
     container_name: jne-airflow-scheduler
     build:
       context: .
       dockerfile: Dockerfile.airflow
     depends_on:
-      - airflow-postgres
+      airflow-init:
+        condition: service_completed_successfully
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./scripts:/opt/airflow/scripts
-      - ./data:/opt/airflow/data
-      - ./pipeline_config.py:/opt/airflow/pipeline_config.py:ro
-      - ./jne-audit-trail:/opt/airflow/jne-audit-trail:ro
+      <<: *airflow-env
+      POSTGRES_USER: ${POSTGRES_USER:-jne_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jne_secure_password_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-jne_dashboard}
+      DB_HOST: jne-postgres
+      DB_PORT: "5432"
+    volumes: *airflow-volumes
     command: scheduler
     networks:
       - jne-network
 
+  # ============================================================
   # pgAdmin - Web-based PostgreSQL management
+  # ============================================================
   pgadmin:
     container_name: jne-pgadmin
     image: dpage/pgadmin4:latest
@@ -136,7 +231,7 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT:-5050}:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
