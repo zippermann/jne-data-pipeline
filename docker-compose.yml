@@ -140,19 +140,7 @@ services:
       DB_HOST: jne-postgres
       DB_PORT: "5432"
     volumes: *airflow-volumes
-    command: >
-      bash -c "
-        echo '============================================================' &&
-        echo 'JNE Data Init: Loading raw data + running unification...' &&
-        echo '============================================================' &&
-        python /opt/airflow/scripts/etl/load_data.py
-          --csv-dir /opt/airflow/data/raw/csv
-          --excel-file /opt/airflow/data/raw/JNE_RAW_COMBINED.xlsx &&
-        python /opt/airflow/scripts/transformations/transform_tables.py &&
-        echo '============================================================' &&
-        echo 'Data initialization complete!' &&
-        echo '============================================================'
-      "
+    command: bash -c "python /opt/airflow/scripts/etl/load_data.py --csv-dir /opt/airflow/data/raw/csv --excel-file /opt/airflow/data/raw/JNE_RAW_COMBINED.xlsx && python /opt/airflow/scripts/transformations/transform_tables.py"
     restart: "no"
     networks:
       - jne-network
