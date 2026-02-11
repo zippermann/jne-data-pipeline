@@ -4,18 +4,25 @@ JNE Pipeline Configuration
 Central config for all pipeline scripts.
 Edit THIS file when you need to change table lists, paths, or data sources.
 
-Last updated: 2026-02-06
+Last updated: 2026-02-10
 Metadata source: (JNE) Column Business Metadata Fixed.xlsx
 """
+
+import os
 
 # ============================================================
 # DATABASE CONNECTION
 # ============================================================
-# When running inside Docker (Airflow, ETL containers):
-DB_CONN = "postgresql://jne_user:jne_secure_password_2024@jne-postgres:5432/jne_dashboard"
+# All values are read from environment variables with sensible defaults.
+# Inside Docker: defaults work out of the box (jne-postgres:5432).
+# Outside Docker: set DB_HOST=localhost and DB_PORT=<your mapped port>.
+DB_HOST = os.getenv('DB_HOST', 'jne-postgres')
+DB_PORT = os.getenv('DB_PORT', '5432')
+DB_USER = os.getenv('POSTGRES_USER', 'jne_user')
+DB_PASS = os.getenv('POSTGRES_PASSWORD', 'jne_secure_password_2024')
+DB_NAME = os.getenv('POSTGRES_DB', 'jne_dashboard')
 
-# When running locally outside Docker (e.g. debugging from your machine):
-# DB_CONN = "postgresql://jne_user:jne_secure_password_2024@localhost:5432/jne_dashboard"
+DB_CONN = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 
 # ============================================================
