@@ -136,10 +136,12 @@ class AuditLogger:
                         dstatus_status,
                         'Legacy System (Backfill)',
                         COALESCE(
-                            CASE WHEN dstatus_status_date IS NOT NULL AND dstatus_status_date > 0
-                                 THEN to_timestamp(dstatus_status_date) END,
-                            CASE WHEN create_date IS NOT NULL AND create_date > 0
-                                 THEN to_timestamp(create_date) END,
+                            CASE WHEN dstatus_status_date IS NOT NULL
+                                      AND dstatus_status_date != ''
+                                 THEN to_timestamp(dstatus_status_date::DOUBLE PRECISION) END,
+                            CASE WHEN create_date IS NOT NULL
+                                      AND create_date != ''
+                                 THEN to_timestamp(create_date::DOUBLE PRECISION) END,
                             CURRENT_TIMESTAMP
                         )
                     FROM raw.cms_dstatus
