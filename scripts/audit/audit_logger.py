@@ -135,7 +135,13 @@ class AuditLogger:
                         CAST(dstatus_cnote_no AS VARCHAR(50)),
                         dstatus_status,
                         'Legacy System (Backfill)',
-                        COALESCE(dstatus_status_date, create_date, CURRENT_TIMESTAMP)
+                        COALESCE(
+                            CASE WHEN dstatus_status_date IS NOT NULL AND dstatus_status_date > 0
+                                 THEN to_timestamp(dstatus_status_date) END,
+                            CASE WHEN create_date IS NOT NULL AND create_date > 0
+                                 THEN to_timestamp(create_date) END,
+                            CURRENT_TIMESTAMP
+                        )
                     FROM raw.cms_dstatus
                     WHERE dstatus_cnote_no IS NOT NULL
                 """))
