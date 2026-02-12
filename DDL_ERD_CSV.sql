@@ -12,6 +12,10 @@
 --   - Excludes Excel-only lookup tables (ORA_ZONE, ORA_USER, T_MDT_CITY_ORIGIN)
 --   - Excludes T_CROSSDOCK_AWD (not present in CSV data)
 -- ============================================
+-- USAGE:
+--   1. Load CSV data into raw schema first (via load_csv_data.py)
+--   2. Run this script to create erd schema, tables, and copy data
+-- ============================================
 
 -- Create the ERD schema
 CREATE SCHEMA IF NOT EXISTS erd AUTHORIZATION jne_user;
@@ -44,6 +48,13 @@ CREATE TABLE erd.cms_cost_mtransit_agen (
 	CONSTRAINT cms_cost_mtransit_agen_pkey PRIMARY KEY ("MANIFEST_NO")
 );
 
+INSERT INTO erd.cms_cost_mtransit_agen
+SELECT manifest_no, manifest_date, branch_id, destination,
+       ctc_weight, act_weight, manifest_approved, remark,
+       manifest_cost, real_cost, manifest_uid, esb_time, esb_id,
+       manifest_type, manifest_doc_ref
+FROM raw.cms_cost_mtransit_agen;
+
 
 -- erd.cms_dmbag (25,789 rows, 11 columns)
 -- Domestic bag records
@@ -61,6 +72,12 @@ CREATE TABLE erd.cms_dmbag (
 	"ESB_TIME" timestamp NULL,
 	"ESB_ID" text NULL
 );
+
+INSERT INTO erd.cms_dmbag
+SELECT dmbag_no, dmbag_bag_no, dmbag_origin, dmbag_destination,
+       dmbag_weight, dmbag_sps, dmbag_inbound, dmbag_type, dmbag_status,
+       esb_time, esb_id
+FROM raw.cms_dmbag;
 
 
 -- erd.cms_drourate (264,677 rows, 17 columns)
@@ -87,6 +104,14 @@ CREATE TABLE erd.cms_drourate (
 	CONSTRAINT cms_drourate_pkey PRIMARY KEY ("DROURATE_CODE", "DROURATE_SERVICE")
 );
 
+INSERT INTO erd.cms_drourate
+SELECT drourate_code, drourate_service, drourate_zone, drourate_transit,
+       drourate_delivery, drourate_linehaul, drourate_addcost, drourate_delivery_next,
+       drourate_active, drourate_warehouse, drourate_uid, drourate_udate,
+       drourate_etd_from, drourate_etd_thru, drourate_time, drourate_linehaul_next,
+       drourate_yes_late
+FROM raw.cms_drourate;
+
 
 -- erd.cms_dstatus (82 rows, 13 columns)
 -- Shipment status change tracking
@@ -107,6 +132,13 @@ CREATE TABLE erd.cms_dstatus (
 	"DSTATUS_ZONE_CODE" text NULL,
 	CONSTRAINT cms_dstatus_pkey PRIMARY KEY ("DSTATUS_CNOTE_NO")
 );
+
+INSERT INTO erd.cms_dstatus
+SELECT dstatus_no, dstatus_cnote_no, dstatus_status, dstatus_remarks,
+       create_date, dstatus_status_date, dstatus_manifest_no_old, dstatus_bag_no_old,
+       dstatus_manifest_no_new, dstatus_manifest_dest, dstatus_manifest_thru,
+       dstatus_bag_no_new, dstatus_zone_code
+FROM raw.cms_dstatus;
 
 
 -- erd.cms_manifest (23,425 rows, 18 columns)
@@ -134,6 +166,14 @@ CREATE TABLE erd.cms_manifest (
 	CONSTRAINT cms_manifest_pkey PRIMARY KEY ("MANIFEST_NO")
 );
 
+INSERT INTO erd.cms_manifest
+SELECT manifest_no, manifest_recall_no, manifest_date, manifest_route,
+       manifest_from, manifest_thru, manifest_notice, manifest_approved,
+       manifest_origin, manifest_code, manifest_uid, manifest_user_audit,
+       manifest_time_audit, manifest_form_audit, manifest_crdate,
+       manifest_canceled, manifest_canceled_uid, manifest_moda
+FROM raw.cms_manifest;
+
 
 -- erd.cms_mhi_hoc (4,581 rows, 12 columns)
 -- Master handover-in (inbound handover header)
@@ -154,6 +194,11 @@ CREATE TABLE erd.cms_mhi_hoc (
 	CONSTRAINT cms_mhi_hoc_pkey PRIMARY KEY ("MHI_NO")
 );
 
+INSERT INTO erd.cms_mhi_hoc
+SELECT mhi_no, mhi_ref_no, mhi_date, mhi_uid, mhi_approve, mhi_branch,
+       mhi_approve_date, mhi_remarks, mhi_user1, mhi_user2, mhi_zone, mhi_courier
+FROM raw.cms_mhi_hoc;
+
 
 -- erd.cms_mhicnote (6,206 rows, 11 columns)
 -- Master handover-in consignment note header
@@ -172,6 +217,12 @@ CREATE TABLE erd.cms_mhicnote (
 	"MHICNOTE_APPROVE" text NULL,
 	CONSTRAINT cms_mhicnote_pkey PRIMARY KEY ("MHICNOTE_NO")
 );
+
+INSERT INTO erd.cms_mhicnote
+SELECT mhicnote_branch_id, mhicnote_zone, mhicnote_no, mhicnote_ref_no,
+       mhicnote_date, mhicnote_zone_orig, mhicnote_user_id, mhicnote_user1,
+       mhicnote_user2, mhicnote_signdate, mhicnote_approve
+FROM raw.cms_mhicnote;
 
 
 -- erd.cms_mhocnote (6,221 rows, 20 columns)
@@ -201,6 +252,14 @@ CREATE TABLE erd.cms_mhocnote (
 	CONSTRAINT cms_mhocnote_pkey PRIMARY KEY ("MHOCNOTE_NO")
 );
 
+INSERT INTO erd.cms_mhocnote
+SELECT mhocnote_branch_id, mhocnote_zone, mhocnote_no, mhocnote_date,
+       mhocnote_zone_dest, mhocnote_user_id, mhocnote_user1, mhocnote_user2,
+       mhocnote_signdate, mhocnote_approve, mhocnote_remarks, mhocnote_origin,
+       mhocnote_courier_id, mhocnote_services, mhocnote_product, mhocnote_cust,
+       mhocnote_user_sco, mhocnote_hvs, mhocnote_app_date, mhocnote_type
+FROM raw.cms_mhocnote;
+
 
 -- erd.cms_mhoundel_pod (248 rows, 11 columns)
 -- Master undelivered POD header
@@ -219,6 +278,12 @@ CREATE TABLE erd.cms_mhoundel_pod (
 	"MHOUNDEL_FLOW" text NULL,
 	CONSTRAINT cms_mhoundel_pod_pk PRIMARY KEY ("MHOUNDEL_NO")
 );
+
+INSERT INTO erd.cms_mhoundel_pod
+SELECT mhoundel_branch_id, mhoundel_no, mhoundel_remarks, mhoundel_date,
+       mhoundel_user_id, mhoundel_zone, mhoundel_approve, mhoundel_user1,
+       mhoundel_user2, mhoundel_signdate, mhoundel_flow
+FROM raw.cms_mhoundel_pod;
 
 
 -- erd.cms_mrcnote (5,337 rows, 12 columns)
@@ -239,6 +304,12 @@ CREATE TABLE erd.cms_mrcnote (
 	"MRCNOTE_TYPE" float8 NULL,
 	CONSTRAINT cms_mrcnote_pkey PRIMARY KEY ("MRCNOTE_NO")
 );
+
+INSERT INTO erd.cms_mrcnote
+SELECT mrcnote_no, mrcnote_date, mrcnote_branch_id, mrcnote_user_id,
+       mrcnote_courier_id, mrcnote_ae_id, mrcnote_user1, mrcnote_user2,
+       mrcnote_signdate, mrcnote_payment, mrcnote_refno, mrcnote_type
+FROM raw.cms_mrcnote;
 
 
 -- erd.cms_msj (8,159 rows, 17 columns)
@@ -264,6 +335,12 @@ CREATE TABLE erd.cms_msj (
 	"MSJ_CHAR3" float8 NULL,
 	CONSTRAINT cms_msj_pkey PRIMARY KEY ("MSJ_NO")
 );
+
+INSERT INTO erd.cms_msj
+SELECT msj_no, msj_branch_id, msj_date, msj_user1, msj_user2, msj_approve,
+       msj_cdate, msj_uid, msj_remarks, msj_signdate, msj_dest, msj_orig,
+       msj_courier_id, msj_armada, msj_char1, msj_char2, msj_char3
+FROM raw.cms_msj;
 
 
 -- erd.cms_msmu (39,546 rows, 26 columns)
@@ -299,6 +376,14 @@ CREATE TABLE erd.cms_msmu (
 	CONSTRAINT cms_msmu_pkey PRIMARY KEY ("MSMU_NO")
 );
 
+INSERT INTO erd.cms_msmu
+SELECT msmu_no, msmu_date, msmu_origin, msmu_destination, msmu_flight_no,
+       msmu_flight_date, msmu_etd, msmu_eta, msmu_qty, msmu_weight, msmu_user,
+       msmu_flag, msmu_remarks, msmu_status, msmu_wrh_date, msmu_wrh_time,
+       msmu_off_date, msmu_off_time, msmu_confirm, msmu_cancel, msmu_user_cancel,
+       msmu_replace, msmu_type, msmu_moda, msmu_police_license_plate, msmu_hours
+FROM raw.cms_msmu;
+
 
 -- erd.cms_rdsj (8,160 rows, 6 columns)
 -- Return domestic shipment journey detail
@@ -312,6 +397,10 @@ CREATE TABLE erd.cms_rdsj (
 	"RDSJ_HVI_NO" text NULL,
 	CONSTRAINT cms_rdsj_pkey PRIMARY KEY ("RDSJ_NO", "RDSJ_BAG_NO", "RDSJ_HVO_NO")
 );
+
+INSERT INTO erd.cms_rdsj
+SELECT rdsj_no, rdsj_bag_no, rdsj_hvo_no, rdsj_uid, rdsj_cdate, rdsj_hvi_no
+FROM raw.cms_rdsj;
 
 
 -- erd.lastmile_courier (10,978 rows, 29 columns)
@@ -350,6 +439,16 @@ CREATE TABLE erd.lastmile_courier (
 	CONSTRAINT lastmile_courier_pkey PRIMARY KEY ("COURIER_ID")
 );
 
+INSERT INTO erd.lastmile_courier
+SELECT courier_id, courier_name, courier_phone, courier_email, courier_password,
+       courier_nik, courier_regional, courier_branch, courier_zone, courier_origin,
+       courier_active, courier_sp_value, courier_incentive_group, courier_armada,
+       courier_employee_status, courier_created_at, courier_updated_at, courier_role_id,
+       courier_level, courier_company_id, courier_type, parent_courier_id, courier_cust_id,
+       courier_vacant1, courier_vacant2, courier_vacant3, courier_vacant4,
+       courier_vacant5, courier_vacant6
+FROM raw.lastmile_courier;
+
 
 -- erd.t_goto (0 rows, 6 columns)
 -- Crossdock goto/routing records
@@ -363,6 +462,10 @@ CREATE TABLE erd.t_goto (
 	"CREATE_DATE" float8 NULL,
 	CONSTRAINT t_goto_pkey PRIMARY KEY ("AWB")
 );
+
+INSERT INTO erd.t_goto
+SELECT awb, crossdock_role, field_char1, field_number1, field_date1, create_date
+FROM raw.t_goto;
 
 
 -- ============================================
@@ -495,6 +598,38 @@ CREATE TABLE erd.cms_cnote (
 	CONSTRAINT fk_cnote_drourate FOREIGN KEY ("CNOTE_ROUTE_CODE","CNOTE_SERVICES_CODE") REFERENCES erd.cms_drourate("DROURATE_CODE","DROURATE_SERVICE")
 );
 
+INSERT INTO erd.cms_cnote
+SELECT cnote_no, cnote_date, cnote_branch_id, cnote_ae_id, cnote_pickup_no,
+       cnote_services_code, cnote_pod_date, cnote_pod_receiver, cnote_pod_code,
+       cnote_cust_no, cnote_route_code, cnote_origin, cnote_destination,
+       cnote_qty, cnote_weight, cnote_dim, cnote_shipper_name, cnote_shipper_addr1,
+       cnote_shipper_addr2, cnote_shipper_addr3, cnote_shipper_city, cnote_shipper_zip,
+       cnote_shipper_region, cnote_shipper_country, cnote_shipper_contact,
+       cnote_shipper_phone, cnote_receiver_name, cnote_receiver_addr1,
+       cnote_receiver_addr2, cnote_receiver_addr3, cnote_receiver_city,
+       cnote_receiver_zip, cnote_receiver_region, cnote_receiver_country,
+       cnote_receiver_contact, cnote_receiver_phone, cnote_delivery_name,
+       cnote_delivery_addr1, cnote_delivery_addr2, cnote_delivery_addr3,
+       cnote_delivery_city, cnote_delivery_zip, cnote_delivery_region,
+       cnote_delivery_country, cnote_delivery_contact, cnote_delivery_phone,
+       cnote_delivery_type, cnote_goods_type, cnote_goods_descr, cnote_goods_value,
+       cnote_special_ins, cnote_insurance_id, cnote_insurance_value, cnote_payment_type,
+       cnote_currency, cnote_amount, cnote_additional_fee, cnote_notice, cnote_commision,
+       cnote_printed, cnote_manifested, cnote_invoiced, cnote_cancel, cnote_hold,
+       cnote_hold_reason, cnote_user, cnote_delivered, cnote_inbound, cnote_holdit,
+       cnote_handling, cnote_mgtfee, cnote_qrc, cnote_quick, cnote_refno,
+       cnote_verified, cnote_vdate, cnote_vuser, cnote_rdate, cnote_ruser,
+       cnote_received, cnote_luid, cnote_ldate, cnote_edit, cnote_bill_status,
+       cnote_manifest_no, cnote_runsheet_no, cnote_do, cnote_insurance_no,
+       cnote_other_fee, cnote_curc_payment, cnote_bank, cnote_curc_rate,
+       cnote_payment_by, cnote_amount_payment, cnote_trans, cnote_euser,
+       cnote_act_weight, cnote_bilnote, cnote_crdate, cnote_shipper_addr4,
+       cnote_receiver_addr4, cnote_packing, cnote_sms, cnote_card_no,
+       cnote_card_amount, cnote_card_disc, cnote_ecnote, status_1, status,
+       cnote_ctc, cnote_yes_cancel, cnote_vat, cnote_vat_amount, cnote_ses_frm,
+       cnote_type_cust, cnote_protect_id, cnote_zip_seq
+FROM raw.cms_cnote;
+
 
 -- erd.cms_cnote_amo (1,357 rows, 13 columns)
 -- Consignment note additional/AMO fields
@@ -517,6 +652,12 @@ CREATE TABLE erd.cms_cnote_amo (
 	CONSTRAINT fk_cnote_amo_cnote FOREIGN KEY ("CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
+INSERT INTO erd.cms_cnote_amo
+SELECT cnote_no, cnote_branch_id, fieldchar1, fieldchar2, fieldchar3,
+       fieldchar4, fieldchar5, fieldnum1, fieldnum2, fieldnum3, fieldnum4,
+       fieldnum5, cdate
+FROM raw.cms_cnote_amo;
+
 
 -- erd.cms_cnote_pod (9,887 rows, 7 columns)
 -- Proof of delivery records
@@ -532,6 +673,11 @@ CREATE TABLE erd.cms_cnote_pod (
 	CONSTRAINT cms_cnote_pod_pkey PRIMARY KEY ("CNOTE_POD_NO"),
 	CONSTRAINT fk_cnote_pod_cnote FOREIGN KEY ("CNOTE_POD_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
+
+INSERT INTO erd.cms_cnote_pod
+SELECT cnote_pod_no, cnote_pod_date, cnote_pod_receiver, cnote_pod_status,
+       cnote_pod_delivered, cnote_pod_doc_no, cnote_pod_creation_date
+FROM raw.cms_cnote_pod;
 
 
 -- erd.cms_cost_dtransit_agen (2,146 rows, 11 columns)
@@ -554,6 +700,12 @@ CREATE TABLE erd.cms_cost_dtransit_agen (
 	CONSTRAINT fk_cost_d_cost_m FOREIGN KEY ("DMANIFEST_NO") REFERENCES erd.cms_cost_mtransit_agen("MANIFEST_NO")
 );
 
+INSERT INTO erd.cms_cost_dtransit_agen
+SELECT dmanifest_no, cnote_no, cnote_origin, cnote_destination, cnote_qty,
+       cnote_weight, cnote_cost, cnote_services_code, esb_time, esb_id,
+       dmanifest_doc_ref
+FROM raw.cms_cost_dtransit_agen;
+
 
 -- erd.cms_dbag_ho (6,223 rows, 10 columns)
 -- Domestic bag handover detail per consignment note
@@ -573,6 +725,11 @@ CREATE TABLE erd.cms_dbag_ho (
 	CONSTRAINT fk_dbag_ho_cnote FOREIGN KEY ("DBAG_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
+INSERT INTO erd.cms_dbag_ho
+SELECT dbag_ho_no, dbag_no, dbag_cnote_no, dbag_cnote_qty, dbag_cnote_weight,
+       dbag_cnote_destination, cdate, dbag_cnote_service, dbag_cnote_date, dbag_zone_dest
+FROM raw.cms_dbag_ho;
+
 
 -- erd.cms_dhi_hoc (4,581 rows, 9 columns)
 -- Detail handover-in consignment records
@@ -591,6 +748,11 @@ CREATE TABLE erd.cms_dhi_hoc (
 	CONSTRAINT fk_dhi_hoc_mhi FOREIGN KEY ("DHI_NO") REFERENCES erd.cms_mhi_hoc("MHI_NO")
 );
 
+INSERT INTO erd.cms_dhi_hoc
+SELECT dhi_no, dhi_seq_no, dhi_ono, dhi_seq_ono, dhi_cnote_no, dhi_cnote_qty,
+       cdate, dhi_remarks, dhi_do
+FROM raw.cms_dhi_hoc;
+
 
 -- erd.cms_dhicnote (6,206 rows, 6 columns)
 -- Detail handover-in consignment note line items
@@ -606,6 +768,11 @@ CREATE TABLE erd.cms_dhicnote (
 	CONSTRAINT fk_dhicnote_cnote FOREIGN KEY ("DHICNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
 	CONSTRAINT fk_dhicnote_mhicnote FOREIGN KEY ("DHICNOTE_NO") REFERENCES erd.cms_mhicnote("MHICNOTE_NO")
 );
+
+INSERT INTO erd.cms_dhicnote
+SELECT dhicnote_no, dhicnote_seq_no, dhicnote_cnote_no, dhicnote_qty,
+       dhicnote_remarks, dhicnote_tdate
+FROM raw.cms_dhicnote;
 
 
 -- erd.cms_dhocnote (6,221 rows, 12 columns)
@@ -629,6 +796,12 @@ CREATE TABLE erd.cms_dhocnote (
 	CONSTRAINT fk_dhocnote_mhocnote FOREIGN KEY ("DHOCNOTE_NO") REFERENCES erd.cms_mhocnote("MHOCNOTE_NO")
 );
 
+INSERT INTO erd.cms_dhocnote
+SELECT dhocnote_no, dhocnote_seq_no, dhocnote_cnote_no, dhocnote_qty,
+       dhocnote_remarks, dhocnote_tdate, dhocnote_inbound, dhocnote_weight,
+       dhocnote_service, dhocnote_dest, dhocnote_goods, dhocnote_handling
+FROM raw.cms_dhocnote;
+
 
 -- erd.cms_dhoundel_pod (248 rows, 11 columns)
 -- Detail undelivered POD line items
@@ -649,6 +822,12 @@ CREATE TABLE erd.cms_dhoundel_pod (
 	CONSTRAINT fk_dhoundel_mhoundel FOREIGN KEY ("DHOUNDEL_NO") REFERENCES erd.cms_mhoundel_pod("MHOUNDEL_NO")
 );
 
+INSERT INTO erd.cms_dhoundel_pod
+SELECT dhoundel_no, dhoundel_seq_no, dhoundel_cnote_no, dhoundel_qty,
+       dhoundel_remarks, dhoundel_weight, dhoundel_service, dhoundel_dest,
+       dhoundel_goods, dhoundel_hrs, create_date
+FROM raw.cms_dhoundel_pod;
+
 
 -- erd.cms_drcnote (5,337 rows, 9 columns)
 -- Detail runsheet consignment note line items
@@ -667,6 +846,11 @@ CREATE TABLE erd.cms_drcnote (
 	CONSTRAINT fk_drcnote_cnote FOREIGN KEY ("DRCNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
 	CONSTRAINT fk_drcnote_mrcnote FOREIGN KEY ("DRCNOTE_NO") REFERENCES erd.cms_mrcnote("MRCNOTE_NO")
 );
+
+INSERT INTO erd.cms_drcnote
+SELECT drcnote_no, drcnote_cnote_no, drcnote_qty, drcnote_remarks, drcnote_tdate,
+       drcnote_tuser, drcnote_flag, drcnote_payment, drcnote_do
+FROM raw.cms_drcnote;
 
 
 -- erd.cms_drsheet_pra (4,847 rows, 10 columns)
@@ -687,6 +871,11 @@ CREATE TABLE erd.cms_drsheet_pra (
 	CONSTRAINT fk_drsheet_pra_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
+INSERT INTO erd.cms_drsheet_pra
+SELECT drsheet_no, drsheet_cnote_no, drsheet_date, drsheet_status, drsheet_receiver,
+       drsheet_flag, drsheet_uid, drsheet_udate, creation_date, drsheet_zone
+FROM raw.cms_drsheet_pra;
+
 
 -- erd.cms_dsj (8,159 rows, 5 columns)
 -- Domestic shipment journey detail (bag-level)
@@ -700,6 +889,10 @@ CREATE TABLE erd.cms_dsj (
 	CONSTRAINT cms_dsj_pkey PRIMARY KEY ("DSJ_NO", "DSJ_BAG_NO", "DSJ_HVO_NO"),
 	CONSTRAINT fk_dsj_msj FOREIGN KEY ("DSJ_NO") REFERENCES erd.cms_msj("MSJ_NO")
 );
+
+INSERT INTO erd.cms_dsj
+SELECT dsj_no, dsj_bag_no, dsj_hvo_no, dsj_uid, dsj_cdate
+FROM raw.cms_dsj;
 
 
 -- erd.cms_dsmu (39,369 rows, 14 columns)
@@ -723,6 +916,12 @@ CREATE TABLE erd.cms_dsmu (
 	CONSTRAINT cms_dsmu_pkey PRIMARY KEY ("DSMU_NO", "DSMU_BAG_NO"),
 	CONSTRAINT fk_dsmu_msmu FOREIGN KEY ("DSMU_NO") REFERENCES erd.cms_msmu("MSMU_NO")
 );
+
+INSERT INTO erd.cms_dsmu
+SELECT dsmu_no, dsmu_flight_no, dsmu_flight_date, dsmu_bag_no, dsmu_weight,
+       dsmu_bag_origin, dsmu_bag_destination, dsmu_bag_cancel, dsmu_sps,
+       dsmu_inbound, esb_time, esb_id, dsmu_manifest_no, dsmu_police_license_plate
+FROM raw.cms_dsmu;
 
 
 -- erd.cms_mfcnote (23,425 rows, 20 columns)
@@ -754,6 +953,14 @@ CREATE TABLE erd.cms_mfcnote (
 	CONSTRAINT fk_mfcnote_manifest FOREIGN KEY ("MFCNOTE_MAN_NO") REFERENCES erd.cms_manifest("MANIFEST_NO")
 );
 
+INSERT INTO erd.cms_mfcnote
+SELECT mfcnote_man_no, mfcnote_bag_no, mfcnote_no, mfcnote_weight, mfcnote_cost,
+       mfcnote_mgtfee, mfcnote_transit, mfcnote_delivery, mfcnote_linehaul,
+       mfcnote_addcost, mfcnote_flag, mfcnote_handling, mfcnote_description,
+       mfcnote_user_audit, mfcnote_time_audit, mfcnote_form_audit, mfcnote_man_code,
+       mfcnote_man_date, mfcnote_crdate, mfcnote_origin
+FROM raw.cms_mfcnote;
+
 
 -- erd.cms_mrsheet (10,978 rows, 13 columns)
 -- Master runsheet records (linked to couriers)
@@ -775,6 +982,12 @@ CREATE TABLE erd.cms_mrsheet (
 	CONSTRAINT cms_mrsheet_pkey PRIMARY KEY ("MRSHEET_NO"),
 	CONSTRAINT fk_mrsheet_courier FOREIGN KEY ("MRSHEET_COURIER_ID") REFERENCES erd.lastmile_courier("COURIER_ID")
 );
+
+INSERT INTO erd.cms_mrsheet
+SELECT mrsheet_branch, mrsheet_no, mrsheet_date, mrsheet_courier_id, mrsheet_uid,
+       mrsheet_udate, mrsheet_approved_dr, mrsheet_uid_dr, mrsheet_udate_dr,
+       mrsheet_inb_app_dr, mrsheet_inb_uid_dr, mrsheet_inb_udate_dr, mrsheet_origin
+FROM raw.cms_mrsheet;
 
 
 -- erd.cms_apicust (4,389 rows, 44 columns)
@@ -829,6 +1042,22 @@ CREATE TABLE erd.cms_apicust (
 	CONSTRAINT fk_apicust_cnote FOREIGN KEY ("APICUST_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
+INSERT INTO erd.cms_apicust
+SELECT apicust_order_id, apicust_cnote_no, apicust_origin, apicust_branch,
+       apicust_cust_no, apicust_services_code, apicust_destination,
+       apicust_shipper_name, apicust_shipper_addr1, apicust_shipper_addr2,
+       apicust_shipper_addr3, apicust_shipper_city, apicust_shipper_zip,
+       apicust_shipper_region, apicust_shipper_country, apicust_shipper_contact,
+       apicust_shipper_phone, apicust_receiver_name, apicust_receiver_addr1,
+       apicust_receiver_addr2, apicust_receiver_addr3, apicust_receiver_city,
+       apicust_receiver_zip, apicust_receiver_region, apicust_receiver_country,
+       apicust_receiver_contact, apicust_receiver_phone, apicust_qty, apicust_weight,
+       apicust_goods_descr, apicust_goods_value, apicust_special_ins, apicust_ins_flag,
+       apicust_cod_flag, apicust_cod_amount, create_date, apicust_reqid, apicust_flag,
+       apicust_latitude, apicust_longitude, apicust_shipment_type, apicust_merchan_id,
+       apicust_name, shipper_provider
+FROM raw.cms_apicust;
+
 
 -- erd.cms_dhov_rsheet (9,661 rows, 23 columns)
 -- Delivery handover runsheet detail
@@ -862,6 +1091,16 @@ CREATE TABLE erd.cms_dhov_rsheet (
 	CONSTRAINT fk_dhov_rsheet_mrsheet FOREIGN KEY ("DHOV_RSHEET_RSHEETNO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
 );
 
+INSERT INTO erd.cms_dhov_rsheet
+SELECT dhov_rsheet_no, dhov_rsheet_cnote, dhov_rsheet_do, dhov_rsheet_cod,
+       dhov_rsheet_undel, dhov_rsheet_redel, dhov_rsheet_outs, dhov_rsheet_qty,
+       create_date, dhov_rsheet_uzone, dhov_rsheet_cycle, dcsundel_rsheet_rsheetno,
+       dhov_rsheet_rsheetno, dhov_drsheet_epay_vend, dhov_drsheet_epay_trxid,
+       dhov_drsheet_epay_amount, dhov_drsheet_epay_device, dhov_drsheet_date,
+       dhov_drsheet_status, dhov_drsheet_receiver, dhov_drsheet_flag,
+       dhov_drsheet_uid, dhov_drsheet_udate
+FROM raw.cms_dhov_rsheet;
+
 
 -- erd.cms_drsheet (10,978 rows, 9 columns)
 -- Delivery runsheet detail per consignment note
@@ -880,6 +1119,11 @@ CREATE TABLE erd.cms_drsheet (
 	CONSTRAINT fk_drsheet_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
 	CONSTRAINT fk_drsheet_mrsheet FOREIGN KEY ("DRSHEET_NO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
 );
+
+INSERT INTO erd.cms_drsheet
+SELECT drsheet_no, drsheet_cnote_no, drsheet_date, drsheet_status, drsheet_receiver,
+       drsheet_flag, drsheet_uid, drsheet_udate, creation_date
+FROM raw.cms_drsheet;
 
 
 -- ============================================
