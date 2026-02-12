@@ -1,0 +1,1482 @@
+-- DROP SCHEMA staging;
+
+CREATE SCHEMA staging AUTHORIZATION jne_user;
+-- staging.cms_cost_mtransit_agen definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_cost_mtransit_agen;
+
+CREATE TABLE staging.cms_cost_mtransit_agen (
+	"MANIFEST_NO" text NOT NULL,
+	"MANIFEST_DATE" float8 NULL,
+	"BRANCH_ID" text NULL,
+	"DESTINATION" text NULL,
+	"CTC_WEIGHT" float8 NULL,
+	"ACT_WEIGHT" float8 NULL,
+	"MANIFEST_APPROVED" text NULL,
+	"REMARK" text NULL,
+	"MANIFEST_COST" float8 NULL,
+	"REAL_COST" float8 NULL,
+	"MANIFEST_UID" text NULL,
+	"ESB_TIME" timestamp NULL,
+	"ESB_ID" text NULL,
+	"MANIFEST_TYPE" float8 NULL,
+	"MANIFEST_DOC_REF" text NULL,
+	CONSTRAINT cms_cost_mtransit_agen_pkey PRIMARY KEY ("MANIFEST_NO")
+);
+
+
+-- staging.cms_dmbag definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dmbag;
+
+CREATE TABLE staging.cms_dmbag (
+	"DMBAG_NO" text NULL,
+	"DMBAG_BAG_NO" text NULL,
+	"DMBAG_ORIGIN" text NULL,
+	"DMBAG_DESTINATION" text NULL,
+	"DMBAG_WEIGHT" float8 NULL,
+	"DMBAG_SPS" float8 NULL,
+	"DMBAG_INBOUND" text NULL,
+	"DMBAG_TYPE" float8 NULL,
+	"DMBAG_STATUS" float8 NULL,
+	"ESB_TIME" timestamp NULL,
+	"ESB_ID" text NULL
+);
+
+
+-- staging.cms_drourate definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_drourate;
+
+CREATE TABLE staging.cms_drourate (
+	"DROURATE_CODE" text NOT NULL,
+	"DROURATE_SERVICE" text NOT NULL,
+	"DROURATE_ZONE" text NULL,
+	"DROURATE_TRANSIT" float8 NULL,
+	"DROURATE_DELIVERY" float8 NULL,
+	"DROURATE_LINEHAUL" float8 NULL,
+	"DROURATE_ADDCOST" float8 NULL,
+	"DROURATE_DELIVERY_NEXT" float8 NULL,
+	"DROURATE_ACTIVE" text NULL,
+	"DROURATE_WAREHOUSE" float8 NULL,
+	"DROURATE_UID" text NULL,
+	"DROURATE_UDATE" timestamp NULL,
+	"DROURATE_ETD_FROM" float8 NULL,
+	"DROURATE_ETD_THRU" float8 NULL,
+	"DROURATE_TIME" text NULL,
+	"DROURATE_LINEHAUL_NEXT" float8 NULL,
+	"DROURATE_YES_LATE" time NULL,
+	CONSTRAINT cms_drourate_pkey PRIMARY KEY ("DROURATE_CODE", "DROURATE_SERVICE")
+);
+
+
+-- staging.cms_dstatus definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dstatus;
+
+CREATE TABLE staging.cms_dstatus (
+	"DSTATUS_NO" text NULL,
+	"DSTATUS_CNOTE_NO" int8 NOT NULL,
+	"DSTATUS_STATUS" text NULL,
+	"DSTATUS_REMARKS" text NULL,
+	"CREATE_DATE" float8 NULL,
+	"DSTATUS_STATUS_DATE" float8 NULL,
+	"DSTATUS_MANIFEST_NO_OLD" float8 NULL,
+	"DSTATUS_BAG_NO_OLD" float8 NULL,
+	"DSTATUS_MANIFEST_NO_NEW" float8 NULL,
+	"DSTATUS_MANIFEST_DEST" float8 NULL,
+	"DSTATUS_MANIFEST_THRU" float8 NULL,
+	"DSTATUS_BAG_NO_NEW" float8 NULL,
+	"DSTATUS_ZONE_CODE" text NULL,
+	CONSTRAINT cms_dstatus_pkey PRIMARY KEY ("DSTATUS_CNOTE_NO")
+);
+
+
+-- staging.cms_manifest definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_manifest;
+
+CREATE TABLE staging.cms_manifest (
+	"MANIFEST_NO" text NOT NULL,
+	"MANIFEST_RECALL_NO" float8 NULL,
+	"MANIFEST_DATE" float8 NULL,
+	"MANIFEST_ROUTE" text NULL,
+	"MANIFEST_FROM" text NULL,
+	"MANIFEST_THRU" text NULL,
+	"MANIFEST_NOTICE" text NULL,
+	"MANIFEST_APPROVED" text NULL,
+	"MANIFEST_ORIGIN" text NULL,
+	"MANIFEST_CODE" int8 NULL,
+	"MANIFEST_UID" text NULL,
+	"MANIFEST_USER_AUDIT" float8 NULL,
+	"MANIFEST_TIME_AUDIT" float8 NULL,
+	"MANIFEST_FORM_AUDIT" float8 NULL,
+	"MANIFEST_CRDATE" float8 NULL,
+	"MANIFEST_CANCELED" text NULL,
+	"MANIFEST_CANCELED_UID" float8 NULL,
+	"MANIFEST_MODA" text NULL,
+	CONSTRAINT cms_manifest_pkey PRIMARY KEY ("MANIFEST_NO")
+);
+
+
+-- staging.cms_mhi_hoc definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mhi_hoc;
+
+CREATE TABLE staging.cms_mhi_hoc (
+	"MHI_NO" text NOT NULL,
+	"MHI_REF_NO" int8 NULL,
+	"MHI_DATE" float8 NULL,
+	"MHI_UID" text NULL,
+	"MHI_APPROVE" text NULL,
+	"MHI_BRANCH" text NULL,
+	"MHI_APPROVE_DATE" float8 NULL,
+	"MHI_REMARKS" float8 NULL,
+	"MHI_USER1" text NULL,
+	"MHI_USER2" float8 NULL,
+	"MHI_ZONE" float8 NULL,
+	"MHI_COURIER" float8 NULL,
+	CONSTRAINT cms_mhi_hoc_pkey PRIMARY KEY ("MHI_NO")
+);
+
+
+-- staging.cms_mhicnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mhicnote;
+
+CREATE TABLE staging.cms_mhicnote (
+	"MHICNOTE_BRANCH_ID" text NULL,
+	"MHICNOTE_ZONE" text NULL,
+	"MHICNOTE_NO" text NOT NULL,
+	"MHICNOTE_REF_NO" text NULL,
+	"MHICNOTE_DATE" float8 NULL,
+	"MHICNOTE_ZONE_ORIG" text NULL,
+	"MHICNOTE_USER_ID" text NULL,
+	"MHICNOTE_USER1" float8 NULL,
+	"MHICNOTE_USER2" float8 NULL,
+	"MHICNOTE_SIGNDATE" int8 NULL,
+	"MHICNOTE_APPROVE" text NULL,
+	CONSTRAINT cms_mhicnote_pkey PRIMARY KEY ("MHICNOTE_NO")
+);
+
+
+-- staging.cms_mhocnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mhocnote;
+
+CREATE TABLE staging.cms_mhocnote (
+	"MHOCNOTE_BRANCH_ID" text NULL,
+	"MHOCNOTE_ZONE" text NULL,
+	"MHOCNOTE_NO" text NOT NULL,
+	"MHOCNOTE_DATE" float8 NULL,
+	"MHOCNOTE_ZONE_DEST" text NULL,
+	"MHOCNOTE_USER_ID" text NULL,
+	"MHOCNOTE_USER1" text NULL,
+	"MHOCNOTE_USER2" text NULL,
+	"MHOCNOTE_SIGNDATE" float8 NULL,
+	"MHOCNOTE_APPROVE" text NULL,
+	"MHOCNOTE_REMARKS" text NULL,
+	"MHOCNOTE_ORIGIN" float8 NULL,
+	"MHOCNOTE_COURIER_ID" float8 NULL,
+	"MHOCNOTE_SERVICES" float8 NULL,
+	"MHOCNOTE_PRODUCT" float8 NULL,
+	"MHOCNOTE_CUST" float8 NULL,
+	"MHOCNOTE_USER_SCO" float8 NULL,
+	"MHOCNOTE_HVS" text NULL,
+	"MHOCNOTE_APP_DATE" float8 NULL,
+	"MHOCNOTE_TYPE" float8 NULL,
+	CONSTRAINT cms_mhocnote_pkey PRIMARY KEY ("MHOCNOTE_NO")
+);
+
+
+-- staging.cms_mhoundel_pod definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mhoundel_pod;
+
+CREATE TABLE staging.cms_mhoundel_pod (
+	"MHOUNDEL_BRANCH_ID" text NULL,
+	"MHOUNDEL_NO" text NOT NULL,
+	"MHOUNDEL_REMARKS" text NULL,
+	"MHOUNDEL_DATE" float8 NULL,
+	"MHOUNDEL_USER_ID" text NULL,
+	"MHOUNDEL_ZONE" text NULL,
+	"MHOUNDEL_APPROVE" text NULL,
+	"MHOUNDEL_USER1" text NULL,
+	"MHOUNDEL_USER2" text NULL,
+	"MHOUNDEL_SIGNDATE" int8 NULL,
+	"MHOUNDEL_FLOW" text NULL,
+	CONSTRAINT cms_mhoundel_pod_pk PRIMARY KEY ("MHOUNDEL_NO")
+);
+
+
+-- staging.cms_mrcnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mrcnote;
+
+CREATE TABLE staging.cms_mrcnote (
+	"MRCNOTE_NO" text NOT NULL,
+	"MRCNOTE_DATE" float8 NULL,
+	"MRCNOTE_BRANCH_ID" text NULL,
+	"MRCNOTE_USER_ID" text NULL,
+	"MRCNOTE_COURIER_ID" text NULL,
+	"MRCNOTE_AE_ID" float8 NULL,
+	"MRCNOTE_USER1" text NULL,
+	"MRCNOTE_USER2" text NULL,
+	"MRCNOTE_SIGNDATE" float8 NULL,
+	"MRCNOTE_PAYMENT" int8 NULL,
+	"MRCNOTE_REFNO" float8 NULL,
+	"MRCNOTE_TYPE" float8 NULL,
+	CONSTRAINT cms_mrcnote_pkey PRIMARY KEY ("MRCNOTE_NO")
+);
+
+
+-- staging.cms_msj definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_msj;
+
+CREATE TABLE staging.cms_msj (
+	"MSJ_NO" text NOT NULL,
+	"MSJ_BRANCH_ID" text NULL,
+	"MSJ_DATE" float8 NULL,
+	"MSJ_USER1" text NULL,
+	"MSJ_USER2" text NULL,
+	"MSJ_APPROVE" text NULL,
+	"MSJ_CDATE" float8 NULL,
+	"MSJ_UID" text NULL,
+	"MSJ_REMARKS" text NULL,
+	"MSJ_SIGNDATE" float8 NULL,
+	"MSJ_DEST" text NULL,
+	"MSJ_ORIG" text NULL,
+	"MSJ_COURIER_ID" float8 NULL,
+	"MSJ_ARMADA" float8 NULL,
+	"MSJ_CHAR1" float8 NULL,
+	"MSJ_CHAR2" float8 NULL,
+	"MSJ_CHAR3" float8 NULL,
+	CONSTRAINT cms_msj_pkey PRIMARY KEY ("MSJ_NO")
+);
+
+
+-- staging.cms_msmu definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_msmu;
+
+CREATE TABLE staging.cms_msmu (
+	"MSMU_NO" text NOT NULL,
+	"MSMU_DATE" float8 NULL,
+	"MSMU_ORIGIN" text NULL,
+	"MSMU_DESTINATION" text NULL,
+	"MSMU_FLIGHT_NO" text NULL,
+	"MSMU_FLIGHT_DATE" float8 NULL,
+	"MSMU_ETD" float8 NULL,
+	"MSMU_ETA" float8 NULL,
+	"MSMU_QTY" float8 NULL,
+	"MSMU_WEIGHT" float8 NULL,
+	"MSMU_USER" text NULL,
+	"MSMU_FLAG" text NULL,
+	"MSMU_REMARKS" text NULL,
+	"MSMU_STATUS" text NULL,
+	"MSMU_WRH_DATE" float8 NULL,
+	"MSMU_WRH_TIME" text NULL,
+	"MSMU_OFF_DATE" float8 NULL,
+	"MSMU_OFF_TIME" text NULL,
+	"MSMU_CONFIRM" text NULL,
+	"MSMU_CANCEL" float8 NULL,
+	"MSMU_USER_CANCEL" float8 NULL,
+	"MSMU_REPLACE" float8 NULL,
+	"MSMU_TYPE" float8 NULL,
+	"MSMU_MODA" text NULL,
+	"MSMU_POLICE_LICENSE_PLATE" text NULL,
+	"MSMU_HOURS" float8 NULL,
+	CONSTRAINT cms_msmu_pkey PRIMARY KEY ("MSMU_NO")
+);
+
+
+-- staging.cms_rdsj definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_rdsj;
+
+CREATE TABLE staging.cms_rdsj (
+	"RDSJ_NO" text NOT NULL,
+	"RDSJ_BAG_NO" text NOT NULL,
+	"RDSJ_HVO_NO" text NOT NULL,
+	"RDSJ_UID" float8 NULL,
+	"RDSJ_CDATE" float8 NULL,
+	"RDSJ_HVI_NO" text NULL,
+	CONSTRAINT cms_rdsj_pkey PRIMARY KEY ("RDSJ_NO", "RDSJ_BAG_NO", "RDSJ_HVO_NO")
+);
+
+
+-- staging.lastmile_courier definition
+
+-- Drop table
+
+-- DROP TABLE staging.lastmile_courier;
+
+CREATE TABLE staging.lastmile_courier (
+	"COURIER_ID" text NOT NULL,
+	"COURIER_NAME" text NULL,
+	"COURIER_PHONE" float8 NULL,
+	"COURIER_EMAIL" text NULL,
+	"COURIER_PASSWORD" text NULL,
+	"COURIER_NIK" text NULL,
+	"COURIER_REGIONAL" text NULL,
+	"COURIER_BRANCH" text NULL,
+	"COURIER_ZONE" text NULL,
+	"COURIER_ORIGIN" text NULL,
+	"COURIER_ACTIVE" int8 NULL,
+	"COURIER_SP_VALUE" int8 NULL,
+	"COURIER_INCENTIVE_GROUP" text NULL,
+	"COURIER_ARMADA" text NULL,
+	"COURIER_EMPLOYEE_STATUS" text NULL,
+	"COURIER_CREATED_AT" float8 NULL,
+	"COURIER_UPDATED_AT" float8 NULL,
+	"COURIER_ROLE_ID" float8 NULL,
+	"COURIER_LEVEL" float8 NULL,
+	"COURIER_COMPANY_ID" float8 NULL,
+	"COURIER_TYPE" int8 NULL,
+	"PARENT_COURIER_ID" float8 NULL,
+	"COURIER_CUST_ID" float8 NULL,
+	"COURIER_VACANT1" float8 NULL,
+	"COURIER_VACANT2" float8 NULL,
+	"COURIER_VACANT3" float8 NULL,
+	"COURIER_VACANT4" float8 NULL,
+	"COURIER_VACANT5" float8 NULL,
+	"COURIER_VACANT6" float8 NULL,
+	CONSTRAINT lastmile_courier_pkey PRIMARY KEY ("COURIER_ID")
+);
+
+
+-- staging.t_mdt_city_origin definition
+
+-- Drop table
+
+-- DROP TABLE staging.t_mdt_city_origin;
+
+CREATE TABLE staging.t_mdt_city_origin (
+	"CITY_BRANCH" text NULL,
+	"CITY_CODE" text NOT NULL,
+	"CITY_ORIGIN" text NULL,
+	"CITY_MTS" text NULL,
+	"CITY_ACTIVE" text NULL,
+	"CREATE_DATE" float8 NULL,
+	CONSTRAINT t_mdt_city_origin_pkey PRIMARY KEY ("CITY_CODE")
+);
+
+
+-- staging.unified_shipments definition
+
+-- Drop table
+
+-- DROP TABLE staging.unified_shipments;
+
+CREATE TABLE staging.unified_shipments (
+	cnote_no text NULL,
+	cnote_date float8 NULL,
+	cnote_branch_id text NULL,
+	cnote_ae_id float8 NULL,
+	cnote_pickup_no float8 NULL,
+	cnote_services_code text NULL,
+	cnote_pod_date float8 NULL,
+	cnote_pod_receiver float8 NULL,
+	cnote_pod_code float8 NULL,
+	cnote_cust_no int8 NULL,
+	cnote_route_code text NULL,
+	cnote_origin text NULL,
+	cnote_destination text NULL,
+	cnote_qty int8 NULL,
+	cnote_weight float8 NULL,
+	cnote_dim float8 NULL,
+	cnote_shipper_name text NULL,
+	cnote_shipper_addr1 text NULL,
+	cnote_shipper_addr2 text NULL,
+	cnote_shipper_addr3 text NULL,
+	cnote_shipper_city text NULL,
+	cnote_shipper_zip text NULL,
+	cnote_shipper_region text NULL,
+	cnote_shipper_country text NULL,
+	cnote_shipper_contact text NULL,
+	cnote_shipper_phone text NULL,
+	cnote_receiver_name text NULL,
+	cnote_receiver_addr1 text NULL,
+	cnote_receiver_addr2 text NULL,
+	cnote_receiver_addr3 text NULL,
+	cnote_receiver_city text NULL,
+	cnote_receiver_zip float8 NULL,
+	cnote_receiver_region text NULL,
+	cnote_receiver_country text NULL,
+	cnote_receiver_contact text NULL,
+	cnote_receiver_phone text NULL,
+	cnote_delivery_name float8 NULL,
+	cnote_delivery_addr1 float8 NULL,
+	cnote_delivery_addr2 float8 NULL,
+	cnote_delivery_addr3 float8 NULL,
+	cnote_delivery_city float8 NULL,
+	cnote_delivery_zip float8 NULL,
+	cnote_delivery_region float8 NULL,
+	cnote_delivery_country float8 NULL,
+	cnote_delivery_contact float8 NULL,
+	cnote_delivery_phone float8 NULL,
+	cnote_delivery_type float8 NULL,
+	cnote_goods_type int8 NULL,
+	cnote_goods_descr text NULL,
+	cnote_goods_value float8 NULL,
+	cnote_special_ins text NULL,
+	cnote_insurance_id text NULL,
+	cnote_insurance_value int8 NULL,
+	cnote_payment_type int8 NULL,
+	cnote_currency text NULL,
+	cnote_amount int8 NULL,
+	cnote_additional_fee float8 NULL,
+	cnote_notice float8 NULL,
+	cnote_commision float8 NULL,
+	cnote_printed text NULL,
+	cnote_manifested text NULL,
+	cnote_invoiced float8 NULL,
+	cnote_cancel float8 NULL,
+	cnote_hold float8 NULL,
+	cnote_hold_reason float8 NULL,
+	cnote_user text NULL,
+	cnote_delivered float8 NULL,
+	cnote_inbound float8 NULL,
+	cnote_holdit float8 NULL,
+	cnote_handling int8 NULL,
+	cnote_mgtfee float8 NULL,
+	cnote_qrc float8 NULL,
+	cnote_quick text NULL,
+	cnote_refno text NULL,
+	cnote_verified float8 NULL,
+	cnote_vdate float8 NULL,
+	cnote_vuser float8 NULL,
+	cnote_rdate float8 NULL,
+	cnote_ruser float8 NULL,
+	cnote_received float8 NULL,
+	cnote_luid float8 NULL,
+	cnote_ldate float8 NULL,
+	cnote_edit float8 NULL,
+	cnote_bill_status text NULL,
+	cnote_manifest_no float8 NULL,
+	cnote_runsheet_no float8 NULL,
+	cnote_do float8 NULL,
+	cnote_insurance_no text NULL,
+	cnote_other_fee float8 NULL,
+	cnote_curc_payment int8 NULL,
+	cnote_bank float8 NULL,
+	cnote_curc_rate int8 NULL,
+	cnote_payment_by text NULL,
+	cnote_amount_payment int8 NULL,
+	cnote_trans float8 NULL,
+	cnote_euser float8 NULL,
+	cnote_act_weight float8 NULL,
+	cnote_bilnote text NULL,
+	cnote_crdate float8 NULL,
+	cnote_shipper_addr4 float8 NULL,
+	cnote_receiver_addr4 float8 NULL,
+	cnote_packing float8 NULL,
+	cnote_sms float8 NULL,
+	cnote_card_no float8 NULL,
+	cnote_card_amount float8 NULL,
+	cnote_card_disc float8 NULL,
+	cnote_ecnote text NULL,
+	status_1 float8 NULL,
+	status text NULL,
+	cnote_ctc float8 NULL,
+	cnote_yes_cancel float8 NULL,
+	cnote_vat text NULL,
+	cnote_vat_amount float8 NULL,
+	cnote_ses_frm text NULL,
+	cnote_type_cust float8 NULL,
+	cnote_protect_id float8 NULL,
+	cnote_zip_seq float8 NULL,
+	created_at timestamp NULL,
+	updated_at timestamp NULL,
+	cnote_pod_status text NULL,
+	cnote_pod_delivered text NULL,
+	cnote_pod_doc_no text NULL,
+	cnote_pod_creation_date float8 NULL,
+	amo_branch_id text NULL,
+	amo_fieldchar1 text NULL,
+	amo_fieldchar2 float8 NULL,
+	amo_fieldchar3 float8 NULL,
+	amo_fieldchar4 float8 NULL,
+	amo_fieldchar5 float8 NULL,
+	amo_fieldnum1 float8 NULL,
+	amo_fieldnum2 float8 NULL,
+	amo_fieldnum3 float8 NULL,
+	amo_fieldnum4 float8 NULL,
+	amo_fieldnum5 float8 NULL,
+	amo_cdate float8 NULL,
+	apicust_order_id text NULL,
+	apicust_branch text NULL,
+	apicust_cust_no int8 NULL,
+	apicust_ins_flag text NULL,
+	apicust_cod_flag text NULL,
+	apicust_cod_amount float8 NULL,
+	apicust_create_date float8 NULL,
+	apicust_reqid float8 NULL,
+	apicust_flag text NULL,
+	apicust_latitude float8 NULL,
+	apicust_longitude float8 NULL,
+	apicust_shipment_type text NULL,
+	apicust_merchan_id text NULL,
+	apicust_name text NULL,
+	shipper_provider text NULL,
+	drourate_zone text NULL,
+	drourate_transit float8 NULL,
+	drourate_delivery float8 NULL,
+	drourate_linehaul float8 NULL,
+	drourate_etd_from float8 NULL,
+	drourate_etd_thru float8 NULL,
+	drourate_active text NULL,
+	drourate_yes_late time NULL,
+	drcnote_no text NULL,
+	drcnote_qty int8 NULL,
+	drcnote_remarks text NULL,
+	drcnote_tdate float8 NULL,
+	drcnote_tuser text NULL,
+	drcnote_flag float8 NULL,
+	drcnote_payment int8 NULL,
+	drcnote_do text NULL,
+	mrcnote_date float8 NULL,
+	mrcnote_branch_id text NULL,
+	mrcnote_user_id text NULL,
+	mrcnote_courier_id text NULL,
+	mrcnote_ae_id float8 NULL,
+	mrcnote_user1 text NULL,
+	mrcnote_user2 text NULL,
+	mrcnote_signdate float8 NULL,
+	mrcnote_payment int8 NULL,
+	mrcnote_refno float8 NULL,
+	mrcnote_type float8 NULL,
+	drsheet_no text NULL,
+	drsheet_date float8 NULL,
+	drsheet_status text NULL,
+	drsheet_receiver text NULL,
+	drsheet_flag text NULL,
+	drsheet_uid text NULL,
+	drsheet_udate float8 NULL,
+	drsheet_creation_date float8 NULL,
+	mrsheet_branch text NULL,
+	mrsheet_date float8 NULL,
+	mrsheet_courier_id text NULL,
+	mrsheet_uid text NULL,
+	mrsheet_udate float8 NULL,
+	mrsheet_approved_dr text NULL,
+	mrsheet_uid_dr text NULL,
+	mrsheet_udate_dr float8 NULL,
+	mrsheet_inb_app_dr float8 NULL,
+	mrsheet_inb_uid_dr text NULL,
+	mrsheet_inb_udate_dr float8 NULL,
+	mrsheet_origin float8 NULL,
+	drsheet_pra_no text NULL,
+	drsheet_pra_date float8 NULL,
+	drsheet_pra_status float8 NULL,
+	drsheet_pra_receiver float8 NULL,
+	drsheet_pra_flag float8 NULL,
+	drsheet_pra_uid float8 NULL,
+	drsheet_pra_udate float8 NULL,
+	drsheet_pra_creation_date float8 NULL,
+	drsheet_pra_zone float8 NULL,
+	dhicnote_no text NULL,
+	dhicnote_seq_no int8 NULL,
+	dhicnote_qty int8 NULL,
+	dhicnote_remarks float8 NULL,
+	dhicnote_tdate float8 NULL,
+	mhicnote_branch_id text NULL,
+	mhicnote_zone text NULL,
+	mhicnote_ref_no text NULL,
+	mhicnote_date float8 NULL,
+	mhicnote_zone_orig text NULL,
+	mhicnote_user_id text NULL,
+	mhicnote_user1 float8 NULL,
+	mhicnote_user2 float8 NULL,
+	mhicnote_signdate int8 NULL,
+	mhicnote_approve text NULL,
+	dhocnote_no text NULL,
+	dhocnote_seq_no int8 NULL,
+	dhocnote_qty int8 NULL,
+	dhocnote_remarks float8 NULL,
+	dhocnote_tdate float8 NULL,
+	dhocnote_inbound float8 NULL,
+	dhocnote_weight float8 NULL,
+	dhocnote_service float8 NULL,
+	dhocnote_dest float8 NULL,
+	dhocnote_goods float8 NULL,
+	dhocnote_handling float8 NULL,
+	mhocnote_branch_id text NULL,
+	mhocnote_zone text NULL,
+	mhocnote_date float8 NULL,
+	mhocnote_zone_dest text NULL,
+	mhocnote_user_id text NULL,
+	mhocnote_user1 text NULL,
+	mhocnote_user2 text NULL,
+	mhocnote_signdate float8 NULL,
+	mhocnote_approve text NULL,
+	mhocnote_remarks text NULL,
+	mhocnote_origin float8 NULL,
+	mhocnote_courier_id float8 NULL,
+	mhocnote_services float8 NULL,
+	mhocnote_product float8 NULL,
+	mhocnote_cust float8 NULL,
+	mhocnote_user_sco float8 NULL,
+	mhocnote_hvs text NULL,
+	mhocnote_app_date float8 NULL,
+	mhocnote_type float8 NULL,
+	dhoundel_no text NULL,
+	dhoundel_seq_no int8 NULL,
+	dhoundel_qty int8 NULL,
+	dhoundel_remarks text NULL,
+	dhoundel_weight float8 NULL,
+	dhoundel_service float8 NULL,
+	dhoundel_dest float8 NULL,
+	dhoundel_goods float8 NULL,
+	dhoundel_hrs text NULL,
+	dhoundel_create_date float8 NULL,
+	mhoundel_branch_id text NULL,
+	mhoundel_remarks text NULL,
+	mhoundel_date float8 NULL,
+	mhoundel_user_id text NULL,
+	mhoundel_zone text NULL,
+	mhoundel_approve text NULL,
+	mhoundel_user1 text NULL,
+	mhoundel_user2 text NULL,
+	mhoundel_signdate int8 NULL,
+	mhoundel_flow text NULL,
+	dhi_no text NULL,
+	dhi_seq_no int8 NULL,
+	dhi_ono text NULL,
+	dhi_seq_ono int8 NULL,
+	dhi_cnote_qty int8 NULL,
+	dhi_hoc_cdate float8 NULL,
+	dhi_remarks float8 NULL,
+	dhi_do text NULL,
+	mhi_ref_no int8 NULL,
+	mhi_date float8 NULL,
+	mhi_uid text NULL,
+	mhi_approve text NULL,
+	mhi_branch text NULL,
+	mhi_approve_date float8 NULL,
+	mhi_remarks float8 NULL,
+	mhi_user1 text NULL,
+	mhi_user2 float8 NULL,
+	mhi_zone float8 NULL,
+	mhi_courier float8 NULL,
+	mfcnote_man_no text NULL,
+	mfcnote_bag_no text NULL,
+	mfcnote_cost int8 NULL,
+	mfcnote_transit float8 NULL,
+	mfcnote_delivery float8 NULL,
+	mfcnote_linehaul float8 NULL,
+	mfcnote_origin text NULL,
+	mfcnote_man_date float8 NULL,
+	manifest_date float8 NULL,
+	manifest_route text NULL,
+	manifest_from text NULL,
+	manifest_thru text NULL,
+	manifest_origin text NULL,
+	manifest_moda text NULL,
+	manifest_approved text NULL,
+	dbag_ho_no text NULL,
+	dbag_no text NULL,
+	dbag_cnote_qty float8 NULL,
+	dbag_cnote_weight float8 NULL,
+	dbag_cnote_destination text NULL,
+	dbag_ho_cdate float8 NULL,
+	dbag_cnote_service text NULL,
+	dbag_cnote_date float8 NULL,
+	dbag_zone_dest text NULL,
+	dmbag_bag_no text NULL,
+	dmbag_origin text NULL,
+	dmbag_destination text NULL,
+	dmbag_weight float8 NULL,
+	dmbag_sps float8 NULL,
+	dmbag_inbound text NULL,
+	dmbag_type float8 NULL,
+	dmbag_status float8 NULL,
+	dhov_rsheet_no text NULL,
+	dhov_rsheet_do float8 NULL,
+	dhov_rsheet_cod float8 NULL,
+	dhov_rsheet_undel float8 NULL,
+	dhov_rsheet_redel float8 NULL,
+	dhov_rsheet_outs float8 NULL,
+	dhov_rsheet_qty float8 NULL,
+	dhov_create_date float8 NULL,
+	dhov_rsheet_uzone text NULL,
+	dhov_rsheet_cycle text NULL,
+	dcsundel_rsheet_rsheetno float8 NULL,
+	dhov_rsheet_rsheetno text NULL,
+	dhov_drsheet_epay_vend float8 NULL,
+	dhov_drsheet_epay_trxid text NULL,
+	dhov_drsheet_epay_amount float8 NULL,
+	dhov_drsheet_epay_device text NULL,
+	dhov_drsheet_date float8 NULL,
+	dhov_drsheet_status text NULL,
+	dhov_drsheet_receiver float8 NULL,
+	dhov_drsheet_flag float8 NULL,
+	dhov_drsheet_uid float8 NULL,
+	dhov_drsheet_udate float8 NULL,
+	dsj_no text NULL,
+	dsj_bag_no text NULL,
+	dsj_cdate float8 NULL,
+	msj_date float8 NULL,
+	msj_dest text NULL,
+	msj_orig text NULL,
+	msj_courier_id float8 NULL,
+	msj_armada float8 NULL,
+	rdsj_no text NULL,
+	rdsj_bag_no text NULL,
+	rdsj_hvo_no text NULL,
+	rdsj_cdate float8 NULL,
+	dsmu_flight_no text NULL,
+	dsmu_flight_date float8 NULL,
+	dsmu_bag_no text NULL,
+	dsmu_weight float8 NULL,
+	dsmu_bag_origin text NULL,
+	dsmu_bag_destination text NULL,
+	msmu_date float8 NULL,
+	msmu_origin text NULL,
+	msmu_destination text NULL,
+	msmu_flight_no text NULL,
+	msmu_flight_date float8 NULL,
+	msmu_etd float8 NULL,
+	msmu_eta float8 NULL,
+	msmu_qty float8 NULL,
+	msmu_weight float8 NULL,
+	msmu_status text NULL,
+	msmu_moda text NULL,
+	dstatus_no text NULL,
+	dstatus_status text NULL,
+	dstatus_remarks text NULL,
+	dstatus_create_date float8 NULL,
+	dstatus_status_date float8 NULL,
+	dstatus_manifest_no_old float8 NULL,
+	dstatus_bag_no_old float8 NULL,
+	dstatus_manifest_no_new float8 NULL,
+	dstatus_manifest_dest float8 NULL,
+	dstatus_manifest_thru float8 NULL,
+	dstatus_bag_no_new float8 NULL,
+	dstatus_zone_code text NULL,
+	cost_d_manifest_no text NULL,
+	cost_d_origin text NULL,
+	cost_d_destination text NULL,
+	cost_d_qty int8 NULL,
+	cost_d_weight float8 NULL,
+	cost_d_cost float8 NULL,
+	cost_d_services_code text NULL,
+	cost_d_doc_ref text NULL,
+	cost_m_manifest_date float8 NULL,
+	cost_m_branch_id text NULL,
+	cost_m_destination text NULL,
+	cost_m_ctc_weight float8 NULL,
+	cost_m_act_weight float8 NULL,
+	cost_m_approved text NULL,
+	cost_m_remark text NULL,
+	cost_m_cost float8 NULL,
+	cost_m_real_cost float8 NULL,
+	cost_m_type float8 NULL,
+	cost_m_doc_ref text NULL,
+	awb_master text NULL,
+	crossdock_create_date float8 NULL,
+	crossdock_role text NULL,
+	field_char1 float8 NULL,
+	field_number1 float8 NULL,
+	field_date1 float8 NULL,
+	goto_create_date float8 NULL,
+	mdt_city_branch text NULL,
+	mdt_city_origin text NULL,
+	mdt_city_mts text NULL,
+	mdt_city_active text NULL,
+	courier_name text NULL,
+	courier_phone float8 NULL,
+	courier_branch text NULL,
+	courier_zone text NULL,
+	courier_origin text NULL,
+	courier_active int8 NULL,
+	courier_armada text NULL,
+	courier_type int8 NULL,
+	courier_level float8 NULL,
+	ora_zone_branch text NULL,
+	ora_zone_desc text NULL,
+	ora_zone_active text NULL,
+	ora_zone_type float8 NULL,
+	ora_zone_kota float8 NULL,
+	ora_zone_kecamatan float8 NULL,
+	ora_zone_provinsi float8 NULL,
+	ora_zone_category float8 NULL,
+	ora_user_name varchar(50) NULL,
+	ora_user_cust_id varchar(100) NULL,
+	ora_user_cust_name varchar(50) NULL,
+	ora_user_zone_code varchar(50) NULL,
+	ora_user_active varchar(50) NULL,
+	ora_user_date varchar(50) NULL,
+	ora_user_origin varchar(50) NULL,
+	ora_user_nik varchar(50) NULL,
+	ora_user_vacant10 varchar(50) NULL,
+	etl_job_id int4 DEFAULT 13 NULL,
+	etl_loaded_at timestamp DEFAULT CURRENT_TIMESTAMP NULL
+);
+
+
+-- staging.cms_cnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_cnote;
+
+CREATE TABLE staging.cms_cnote (
+	"CNOTE_NO" text NOT NULL,
+	"CNOTE_DATE" float8 NULL,
+	"CNOTE_BRANCH_ID" text NULL,
+	"CNOTE_AE_ID" float8 NULL,
+	"CNOTE_PICKUP_NO" float8 NULL,
+	"CNOTE_SERVICES_CODE" text NULL,
+	"CNOTE_POD_DATE" float8 NULL,
+	"CNOTE_POD_RECEIVER" float8 NULL,
+	"CNOTE_POD_CODE" float8 NULL,
+	"CNOTE_CUST_NO" int8 NULL,
+	"CNOTE_ROUTE_CODE" text NULL,
+	"CNOTE_ORIGIN" text NULL,
+	"CNOTE_DESTINATION" text NULL,
+	"CNOTE_QTY" int8 NULL,
+	"CNOTE_WEIGHT" float8 NULL,
+	"CNOTE_DIM" float8 NULL,
+	"CNOTE_SHIPPER_NAME" text NULL,
+	"CNOTE_SHIPPER_ADDR1" text NULL,
+	"CNOTE_SHIPPER_ADDR2" text NULL,
+	"CNOTE_SHIPPER_ADDR3" text NULL,
+	"CNOTE_SHIPPER_CITY" text NULL,
+	"CNOTE_SHIPPER_ZIP" text NULL,
+	"CNOTE_SHIPPER_REGION" text NULL,
+	"CNOTE_SHIPPER_COUNTRY" text NULL,
+	"CNOTE_SHIPPER_CONTACT" text NULL,
+	"CNOTE_SHIPPER_PHONE" text NULL,
+	"CNOTE_RECEIVER_NAME" text NULL,
+	"CNOTE_RECEIVER_ADDR1" text NULL,
+	"CNOTE_RECEIVER_ADDR2" text NULL,
+	"CNOTE_RECEIVER_ADDR3" text NULL,
+	"CNOTE_RECEIVER_CITY" text NULL,
+	"CNOTE_RECEIVER_ZIP" float8 NULL,
+	"CNOTE_RECEIVER_REGION" text NULL,
+	"CNOTE_RECEIVER_COUNTRY" text NULL,
+	"CNOTE_RECEIVER_CONTACT" text NULL,
+	"CNOTE_RECEIVER_PHONE" text NULL,
+	"CNOTE_DELIVERY_NAME" float8 NULL,
+	"CNOTE_DELIVERY_ADDR1" float8 NULL,
+	"CNOTE_DELIVERY_ADDR2" float8 NULL,
+	"CNOTE_DELIVERY_ADDR3" float8 NULL,
+	"CNOTE_DELIVERY_CITY" float8 NULL,
+	"CNOTE_DELIVERY_ZIP" float8 NULL,
+	"CNOTE_DELIVERY_REGION" float8 NULL,
+	"CNOTE_DELIVERY_COUNTRY" float8 NULL,
+	"CNOTE_DELIVERY_CONTACT" float8 NULL,
+	"CNOTE_DELIVERY_PHONE" float8 NULL,
+	"CNOTE_DELIVERY_TYPE" float8 NULL,
+	"CNOTE_GOODS_TYPE" int8 NULL,
+	"CNOTE_GOODS_DESCR" text NULL,
+	"CNOTE_GOODS_VALUE" float8 NULL,
+	"CNOTE_SPECIAL_INS" text NULL,
+	"CNOTE_INSURANCE_ID" text NULL,
+	"CNOTE_INSURANCE_VALUE" int8 NULL,
+	"CNOTE_PAYMENT_TYPE" int8 NULL,
+	"CNOTE_CURRENCY" text NULL,
+	"CNOTE_AMOUNT" int8 NULL,
+	"CNOTE_ADDITIONAL_FEE" float8 NULL,
+	"CNOTE_NOTICE" float8 NULL,
+	"CNOTE_COMMISION" float8 NULL,
+	"CNOTE_PRINTED" text NULL,
+	"CNOTE_MANIFESTED" text NULL,
+	"CNOTE_INVOICED" float8 NULL,
+	"CNOTE_CANCEL" float8 NULL,
+	"CNOTE_HOLD" float8 NULL,
+	"CNOTE_HOLD_REASON" float8 NULL,
+	"CNOTE_USER" text NULL,
+	"CNOTE_DELIVERED" float8 NULL,
+	"CNOTE_INBOUND" float8 NULL,
+	"CNOTE_HOLDIT" float8 NULL,
+	"CNOTE_HANDLING" int8 NULL,
+	"CNOTE_MGTFEE" float8 NULL,
+	"CNOTE_QRC" float8 NULL,
+	"CNOTE_QUICK" text NULL,
+	"CNOTE_REFNO" text NULL,
+	"CNOTE_VERIFIED" float8 NULL,
+	"CNOTE_VDATE" float8 NULL,
+	"CNOTE_VUSER" float8 NULL,
+	"CNOTE_RDATE" float8 NULL,
+	"CNOTE_RUSER" float8 NULL,
+	"CNOTE_RECEIVED" float8 NULL,
+	"CNOTE_LUID" float8 NULL,
+	"CNOTE_LDATE" float8 NULL,
+	"CNOTE_EDIT" float8 NULL,
+	"CNOTE_BILL_STATUS" text NULL,
+	"CNOTE_MANIFEST_NO" float8 NULL,
+	"CNOTE_RUNSHEET_NO" float8 NULL,
+	"CNOTE_DO" float8 NULL,
+	"CNOTE_INSURANCE_NO" text NULL,
+	"CNOTE_OTHER_FEE" float8 NULL,
+	"CNOTE_CURC_PAYMENT" int8 NULL,
+	"CNOTE_BANK" float8 NULL,
+	"CNOTE_CURC_RATE" int8 NULL,
+	"CNOTE_PAYMENT_BY" text NULL,
+	"CNOTE_AMOUNT_PAYMENT" int8 NULL,
+	"CNOTE_TRANS" float8 NULL,
+	"CNOTE_EUSER" float8 NULL,
+	"CNOTE_ACT_WEIGHT" float8 NULL,
+	"CNOTE_BILNOTE" text NULL,
+	"CNOTE_CRDATE" float8 NULL,
+	"CNOTE_SHIPPER_ADDR4" float8 NULL,
+	"CNOTE_RECEIVER_ADDR4" float8 NULL,
+	"CNOTE_PACKING" float8 NULL,
+	"CNOTE_SMS" float8 NULL,
+	"CNOTE_CARD_NO" float8 NULL,
+	"CNOTE_CARD_AMOUNT" float8 NULL,
+	"CNOTE_CARD_DISC" float8 NULL,
+	"CNOTE_ECNOTE" text NULL,
+	"STATUS_1" float8 NULL,
+	"STATUS" text NULL,
+	"CNOTE_CTC" float8 NULL,
+	"CNOTE_YES_CANCEL" float8 NULL,
+	"CNOTE_VAT" text NULL,
+	"CNOTE_VAT_AMOUNT" float8 NULL,
+	"CNOTE_SES_FRM" text NULL,
+	"CNOTE_TYPE_CUST" float8 NULL,
+	"CNOTE_PROTECT_ID" float8 NULL,
+	"CNOTE_ZIP_SEQ" float8 NULL,
+	CONSTRAINT cms_cnote_pkey PRIMARY KEY ("CNOTE_NO"),
+	CONSTRAINT fk_cnote_drourate FOREIGN KEY ("CNOTE_ROUTE_CODE","CNOTE_SERVICES_CODE") REFERENCES staging.cms_drourate("DROURATE_CODE","DROURATE_SERVICE")
+);
+
+
+-- staging.cms_cnote_amo definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_cnote_amo;
+
+CREATE TABLE staging.cms_cnote_amo (
+	"CNOTE_NO" text NOT NULL,
+	"CNOTE_BRANCH_ID" text NULL,
+	"FIELDCHAR1" text NULL,
+	"FIELDCHAR2" float8 NULL,
+	"FIELDCHAR3" float8 NULL,
+	"FIELDCHAR4" float8 NULL,
+	"FIELDCHAR5" float8 NULL,
+	"FIELDNUM1" float8 NULL,
+	"FIELDNUM2" float8 NULL,
+	"FIELDNUM3" float8 NULL,
+	"FIELDNUM4" float8 NULL,
+	"FIELDNUM5" float8 NULL,
+	"CDATE" float8 NULL,
+	CONSTRAINT cms_cnote_amo_pkey PRIMARY KEY ("CNOTE_NO"),
+	CONSTRAINT fk_cnote_amo_cnote FOREIGN KEY ("CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO")
+);
+
+
+-- staging.cms_cnote_pod definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_cnote_pod;
+
+CREATE TABLE staging.cms_cnote_pod (
+	"CNOTE_POD_NO" text NOT NULL,
+	"CNOTE_POD_DATE" float8 NULL,
+	"CNOTE_POD_RECEIVER" text NULL,
+	"CNOTE_POD_STATUS" text NULL,
+	"CNOTE_POD_DELIVERED" text NULL,
+	"CNOTE_POD_DOC_NO" text NULL,
+	"CNOTE_POD_CREATION_DATE" float8 NULL,
+	CONSTRAINT cms_cnote_pod_pkey PRIMARY KEY ("CNOTE_POD_NO"),
+	CONSTRAINT fk_cnote_pod_cnote FOREIGN KEY ("CNOTE_POD_NO") REFERENCES staging.cms_cnote("CNOTE_NO")
+);
+
+
+-- staging.cms_cost_dtransit_agen definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_cost_dtransit_agen;
+
+CREATE TABLE staging.cms_cost_dtransit_agen (
+	"DMANIFEST_NO" text NOT NULL,
+	"CNOTE_NO" text NOT NULL,
+	"CNOTE_ORIGIN" text NULL,
+	"CNOTE_DESTINATION" text NULL,
+	"CNOTE_QTY" int8 NULL,
+	"CNOTE_WEIGHT" float8 NULL,
+	"CNOTE_COST" float8 NULL,
+	"CNOTE_SERVICES_CODE" text NULL,
+	"ESB_TIME" timestamp NULL,
+	"ESB_ID" text NULL,
+	"DMANIFEST_DOC_REF" text NULL,
+	CONSTRAINT cms_cost_dtransit_agen_pkey PRIMARY KEY ("DMANIFEST_NO", "CNOTE_NO"),
+	CONSTRAINT fk_cost_d_cnote FOREIGN KEY ("CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_cost_d_cost_m FOREIGN KEY ("DMANIFEST_NO") REFERENCES staging.cms_cost_mtransit_agen("MANIFEST_NO")
+);
+
+
+-- staging.cms_dbag_ho definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dbag_ho;
+
+CREATE TABLE staging.cms_dbag_ho (
+	"DBAG_HO_NO" text NULL,
+	"DBAG_NO" text NOT NULL,
+	"DBAG_CNOTE_NO" text NOT NULL,
+	"DBAG_CNOTE_QTY" float8 NULL,
+	"DBAG_CNOTE_WEIGHT" float8 NULL,
+	"DBAG_CNOTE_DESTINATION" text NULL,
+	"CDATE" float8 NULL,
+	"DBAG_CNOTE_SERVICE" text NULL,
+	"DBAG_CNOTE_DATE" float8 NULL,
+	"DBAG_ZONE_DEST" text NULL,
+	CONSTRAINT cms_dbag_ho_pkey PRIMARY KEY ("DBAG_NO", "DBAG_CNOTE_NO"),
+	CONSTRAINT fk_dbag_ho_cnote FOREIGN KEY ("DBAG_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO")
+);
+
+
+-- staging.cms_dhi_hoc definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dhi_hoc;
+
+CREATE TABLE staging.cms_dhi_hoc (
+	"DHI_NO" text NOT NULL,
+	"DHI_SEQ_NO" int8 NOT NULL,
+	"DHI_ONO" text NULL,
+	"DHI_SEQ_ONO" int8 NULL,
+	"DHI_CNOTE_NO" text NULL,
+	"DHI_CNOTE_QTY" int8 NULL,
+	"CDATE" float8 NULL,
+	"DHI_REMARKS" float8 NULL,
+	"DHI_DO" text NULL,
+	CONSTRAINT cms_dhi_hoc_pkey PRIMARY KEY ("DHI_NO", "DHI_SEQ_NO"),
+	CONSTRAINT fk_dhi_hoc_mhi FOREIGN KEY ("DHI_NO") REFERENCES staging.cms_mhi_hoc("MHI_NO")
+);
+
+
+-- staging.cms_dhicnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dhicnote;
+
+CREATE TABLE staging.cms_dhicnote (
+	"DHICNOTE_NO" text NOT NULL,
+	"DHICNOTE_SEQ_NO" int8 NOT NULL,
+	"DHICNOTE_CNOTE_NO" text NULL,
+	"DHICNOTE_QTY" int8 NULL,
+	"DHICNOTE_REMARKS" float8 NULL,
+	"DHICNOTE_TDATE" float8 NULL,
+	CONSTRAINT cms_dhicnote_pkey PRIMARY KEY ("DHICNOTE_NO", "DHICNOTE_SEQ_NO"),
+	CONSTRAINT fk_dhicnote_cnote FOREIGN KEY ("DHICNOTE_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_dhicnote_mhicnote FOREIGN KEY ("DHICNOTE_NO") REFERENCES staging.cms_mhicnote("MHICNOTE_NO")
+);
+
+
+-- staging.cms_dhocnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dhocnote;
+
+CREATE TABLE staging.cms_dhocnote (
+	"DHOCNOTE_NO" text NOT NULL,
+	"DHOCNOTE_SEQ_NO" int8 NOT NULL,
+	"DHOCNOTE_CNOTE_NO" text NULL,
+	"DHOCNOTE_QTY" int8 NULL,
+	"DHOCNOTE_REMARKS" float8 NULL,
+	"DHOCNOTE_TDATE" float8 NULL,
+	"DHOCNOTE_INBOUND" float8 NULL,
+	"DHOCNOTE_WEIGHT" float8 NULL,
+	"DHOCNOTE_SERVICE" float8 NULL,
+	"DHOCNOTE_DEST" float8 NULL,
+	"DHOCNOTE_GOODS" float8 NULL,
+	"DHOCNOTE_HANDLING" float8 NULL,
+	CONSTRAINT cms_dhocnote_pkey PRIMARY KEY ("DHOCNOTE_NO", "DHOCNOTE_SEQ_NO"),
+	CONSTRAINT fk_dhocnote_cnote FOREIGN KEY ("DHOCNOTE_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_dhocnote_mhocnote FOREIGN KEY ("DHOCNOTE_NO") REFERENCES staging.cms_mhocnote("MHOCNOTE_NO")
+);
+
+
+-- staging.cms_dhoundel_pod definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dhoundel_pod;
+
+CREATE TABLE staging.cms_dhoundel_pod (
+	"DHOUNDEL_NO" text NULL,
+	"DHOUNDEL_SEQ_NO" int8 NULL,
+	"DHOUNDEL_CNOTE_NO" text NULL,
+	"DHOUNDEL_QTY" int8 NULL,
+	"DHOUNDEL_REMARKS" text NULL,
+	"DHOUNDEL_WEIGHT" float8 NULL,
+	"DHOUNDEL_SERVICE" float8 NULL,
+	"DHOUNDEL_DEST" float8 NULL,
+	"DHOUNDEL_GOODS" float8 NULL,
+	"DHOUNDEL_HRS" text NULL,
+	"CREATE_DATE" float8 NULL,
+	CONSTRAINT fk_dhoundel_cnote FOREIGN KEY ("DHOUNDEL_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_dhoundel_mhoundel FOREIGN KEY ("DHOUNDEL_NO") REFERENCES staging.cms_mhoundel_pod("MHOUNDEL_NO")
+);
+
+
+-- staging.cms_drcnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_drcnote;
+
+CREATE TABLE staging.cms_drcnote (
+	"DRCNOTE_NO" text NULL,
+	"DRCNOTE_CNOTE_NO" text NOT NULL,
+	"DRCNOTE_QTY" int8 NULL,
+	"DRCNOTE_REMARKS" text NULL,
+	"DRCNOTE_TDATE" float8 NULL,
+	"DRCNOTE_TUSER" text NULL,
+	"DRCNOTE_FLAG" float8 NULL,
+	"DRCNOTE_PAYMENT" int8 NULL,
+	"DRCNOTE_DO" text NULL,
+	CONSTRAINT cms_drcnote_pkey PRIMARY KEY ("DRCNOTE_CNOTE_NO"),
+	CONSTRAINT fk_drcnote_cnote FOREIGN KEY ("DRCNOTE_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_drcnote_mrcnote FOREIGN KEY ("DRCNOTE_NO") REFERENCES staging.cms_mrcnote("MRCNOTE_NO")
+);
+
+
+-- staging.cms_drsheet_pra definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_drsheet_pra;
+
+CREATE TABLE staging.cms_drsheet_pra (
+	"DRSHEET_NO" text NULL,
+	"DRSHEET_CNOTE_NO" text NOT NULL,
+	"DRSHEET_DATE" float8 NULL,
+	"DRSHEET_STATUS" float8 NULL,
+	"DRSHEET_RECEIVER" float8 NULL,
+	"DRSHEET_FLAG" float8 NULL,
+	"DRSHEET_UID" float8 NULL,
+	"DRSHEET_UDATE" float8 NULL,
+	"CREATION_DATE" float8 NULL,
+	"DRSHEET_ZONE" float8 NULL,
+	CONSTRAINT cms_drsheet_pra_pkey PRIMARY KEY ("DRSHEET_CNOTE_NO"),
+	CONSTRAINT fk_drsheet_pra_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO")
+);
+
+
+-- staging.cms_dsj definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dsj;
+
+CREATE TABLE staging.cms_dsj (
+	"DSJ_NO" text NOT NULL,
+	"DSJ_BAG_NO" text NOT NULL,
+	"DSJ_HVO_NO" text NOT NULL,
+	"DSJ_UID" text NULL,
+	"DSJ_CDATE" float8 NULL,
+	CONSTRAINT cms_dsj_pkey PRIMARY KEY ("DSJ_NO", "DSJ_BAG_NO", "DSJ_HVO_NO"),
+	CONSTRAINT fk_dsj_msj FOREIGN KEY ("DSJ_NO") REFERENCES staging.cms_msj("MSJ_NO")
+);
+
+
+-- staging.cms_dsmu definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dsmu;
+
+CREATE TABLE staging.cms_dsmu (
+	"DSMU_NO" text NOT NULL,
+	"DSMU_FLIGHT_NO" text NULL,
+	"DSMU_FLIGHT_DATE" float8 NULL,
+	"DSMU_BAG_NO" text NOT NULL,
+	"DSMU_WEIGHT" float8 NULL,
+	"DSMU_BAG_ORIGIN" text NULL,
+	"DSMU_BAG_DESTINATION" text NULL,
+	"DSMU_BAG_CANCEL" float8 NULL,
+	"DSMU_SPS" float8 NULL,
+	"DSMU_INBOUND" text NULL,
+	"ESB_TIME" timestamp NULL,
+	"ESB_ID" text NULL,
+	"DSMU_MANIFEST_NO" float8 NULL,
+	"DSMU_POLICE_LICENSE_PLATE" text NULL,
+	CONSTRAINT cms_dsmu_pkey PRIMARY KEY ("DSMU_NO", "DSMU_BAG_NO"),
+	CONSTRAINT fk_dsmu_msmu FOREIGN KEY ("DSMU_NO") REFERENCES staging.cms_msmu("MSMU_NO")
+);
+
+
+-- staging.cms_mfcnote definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mfcnote;
+
+CREATE TABLE staging.cms_mfcnote (
+	"MFCNOTE_MAN_NO" text NOT NULL,
+	"MFCNOTE_BAG_NO" text NULL,
+	"MFCNOTE_NO" text NOT NULL,
+	"MFCNOTE_WEIGHT" float8 NULL,
+	"MFCNOTE_COST" int8 NULL,
+	"MFCNOTE_MGTFEE" float8 NULL,
+	"MFCNOTE_TRANSIT" float8 NULL,
+	"MFCNOTE_DELIVERY" float8 NULL,
+	"MFCNOTE_LINEHAUL" float8 NULL,
+	"MFCNOTE_ADDCOST" float8 NULL,
+	"MFCNOTE_FLAG" text NULL,
+	"MFCNOTE_HANDLING" float8 NULL,
+	"MFCNOTE_DESCRIPTION" float8 NULL,
+	"MFCNOTE_USER_AUDIT" float8 NULL,
+	"MFCNOTE_TIME_AUDIT" float8 NULL,
+	"MFCNOTE_FORM_AUDIT" float8 NULL,
+	"MFCNOTE_MAN_CODE" float8 NULL,
+	"MFCNOTE_MAN_DATE" float8 NULL,
+	"MFCNOTE_CRDATE" float8 NULL,
+	"MFCNOTE_ORIGIN" text NULL,
+	CONSTRAINT cms_mfcnote_pkey PRIMARY KEY ("MFCNOTE_MAN_NO", "MFCNOTE_NO"),
+	CONSTRAINT fk_mfcnote_cnote FOREIGN KEY ("MFCNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_mfcnote_manifest FOREIGN KEY ("MFCNOTE_MAN_NO") REFERENCES staging.cms_manifest("MANIFEST_NO")
+);
+
+
+-- staging.cms_mrsheet definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_mrsheet;
+
+CREATE TABLE staging.cms_mrsheet (
+	"MRSHEET_BRANCH" text NULL,
+	"MRSHEET_NO" text NOT NULL,
+	"MRSHEET_DATE" float8 NULL,
+	"MRSHEET_COURIER_ID" text NULL,
+	"MRSHEET_UID" text NULL,
+	"MRSHEET_UDATE" float8 NULL,
+	"MRSHEET_APPROVED_DR" text NULL,
+	"MRSHEET_UID_DR" text NULL,
+	"MRSHEET_UDATE_DR" float8 NULL,
+	"MRSHEET_INB_APP_DR" float8 NULL,
+	"MRSHEET_INB_UID_DR" text NULL,
+	"MRSHEET_INB_UDATE_DR" float8 NULL,
+	"MRSHEET_ORIGIN" float8 NULL,
+	CONSTRAINT cms_mrsheet_pkey PRIMARY KEY ("MRSHEET_NO"),
+	CONSTRAINT fk_mrsheet_courier FOREIGN KEY ("MRSHEET_COURIER_ID") REFERENCES staging.lastmile_courier("COURIER_ID")
+);
+
+
+-- staging.cms_apicust definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_apicust;
+
+CREATE TABLE staging.cms_apicust (
+	"APICUST_ORDER_ID" text NOT NULL,
+	"APICUST_CNOTE_NO" text NULL,
+	"APICUST_ORIGIN" text NULL,
+	"APICUST_BRANCH" text NULL,
+	"APICUST_CUST_NO" int8 NULL,
+	"APICUST_SERVICES_CODE" text NULL,
+	"APICUST_DESTINATION" text NULL,
+	"APICUST_SHIPPER_NAME" text NULL,
+	"APICUST_SHIPPER_ADDR1" text NULL,
+	"APICUST_SHIPPER_ADDR2" text NULL,
+	"APICUST_SHIPPER_ADDR3" text NULL,
+	"APICUST_SHIPPER_CITY" text NULL,
+	"APICUST_SHIPPER_ZIP" text NULL,
+	"APICUST_SHIPPER_REGION" text NULL,
+	"APICUST_SHIPPER_COUNTRY" text NULL,
+	"APICUST_SHIPPER_CONTACT" text NULL,
+	"APICUST_SHIPPER_PHONE" text NULL,
+	"APICUST_RECEIVER_NAME" text NULL,
+	"APICUST_RECEIVER_ADDR1" text NULL,
+	"APICUST_RECEIVER_ADDR2" text NULL,
+	"APICUST_RECEIVER_ADDR3" text NULL,
+	"APICUST_RECEIVER_CITY" text NULL,
+	"APICUST_RECEIVER_ZIP" float8 NULL,
+	"APICUST_RECEIVER_REGION" text NULL,
+	"APICUST_RECEIVER_COUNTRY" text NULL,
+	"APICUST_RECEIVER_CONTACT" text NULL,
+	"APICUST_RECEIVER_PHONE" text NULL,
+	"APICUST_QTY" int8 NULL,
+	"APICUST_WEIGHT" float8 NULL,
+	"APICUST_GOODS_DESCR" text NULL,
+	"APICUST_GOODS_VALUE" float8 NULL,
+	"APICUST_SPECIAL_INS" text NULL,
+	"APICUST_INS_FLAG" text NULL,
+	"APICUST_COD_FLAG" text NULL,
+	"APICUST_COD_AMOUNT" float8 NULL,
+	"CREATE_DATE" float8 NULL,
+	"APICUST_REQID" float8 NULL,
+	"APICUST_FLAG" text NULL,
+	"APICUST_LATITUDE" float8 NULL,
+	"APICUST_LONGITUDE" float8 NULL,
+	"APICUST_SHIPMENT_TYPE" text NULL,
+	"APICUST_MERCHAN_ID" text NULL,
+	"APICUST_NAME" text NULL,
+	"SHIPPER_PROVIDER" text NULL,
+	CONSTRAINT cms_apicust_pkey PRIMARY KEY ("APICUST_ORDER_ID"),
+	CONSTRAINT fk_apicust_cnote FOREIGN KEY ("APICUST_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO")
+);
+
+
+-- staging.cms_dhov_rsheet definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_dhov_rsheet;
+
+CREATE TABLE staging.cms_dhov_rsheet (
+	"DHOV_RSHEET_NO" text NOT NULL,
+	"DHOV_RSHEET_CNOTE" text NOT NULL,
+	"DHOV_RSHEET_DO" float8 NULL,
+	"DHOV_RSHEET_COD" float8 NULL,
+	"DHOV_RSHEET_UNDEL" float8 NULL,
+	"DHOV_RSHEET_REDEL" float8 NULL,
+	"DHOV_RSHEET_OUTS" float8 NULL,
+	"DHOV_RSHEET_QTY" float8 NULL,
+	"CREATE_DATE" float8 NULL,
+	"DHOV_RSHEET_UZONE" text NULL,
+	"DHOV_RSHEET_CYCLE" text NULL,
+	"DCSUNDEL_RSHEET_RSHEETNO" float8 NULL,
+	"DHOV_RSHEET_RSHEETNO" text NULL,
+	"DHOV_DRSHEET_EPAY_VEND" float8 NULL,
+	"DHOV_DRSHEET_EPAY_TRXID" text NULL,
+	"DHOV_DRSHEET_EPAY_AMOUNT" float8 NULL,
+	"DHOV_DRSHEET_EPAY_DEVICE" text NULL,
+	"DHOV_DRSHEET_DATE" float8 NULL,
+	"DHOV_DRSHEET_STATUS" text NULL,
+	"DHOV_DRSHEET_RECEIVER" float8 NULL,
+	"DHOV_DRSHEET_FLAG" float8 NULL,
+	"DHOV_DRSHEET_UID" float8 NULL,
+	"DHOV_DRSHEET_UDATE" float8 NULL,
+	CONSTRAINT cms_dhov_rsheet_pkey PRIMARY KEY ("DHOV_RSHEET_NO", "DHOV_RSHEET_CNOTE"),
+	CONSTRAINT fk_dhov_rsheet_cnote FOREIGN KEY ("DHOV_RSHEET_CNOTE") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_dhov_rsheet_mrsheet FOREIGN KEY ("DHOV_RSHEET_RSHEETNO") REFERENCES staging.cms_mrsheet("MRSHEET_NO")
+);
+
+
+-- staging.cms_drsheet definition
+
+-- Drop table
+
+-- DROP TABLE staging.cms_drsheet;
+
+CREATE TABLE staging.cms_drsheet (
+	"DRSHEET_NO" text NOT NULL,
+	"DRSHEET_CNOTE_NO" text NOT NULL,
+	"DRSHEET_DATE" float8 NULL,
+	"DRSHEET_STATUS" text NULL,
+	"DRSHEET_RECEIVER" text NULL,
+	"DRSHEET_FLAG" text NULL,
+	"DRSHEET_UID" text NULL,
+	"DRSHEET_UDATE" float8 NULL,
+	"CREATION_DATE" float8 NULL,
+	CONSTRAINT cms_drsheet_pkey PRIMARY KEY ("DRSHEET_NO", "DRSHEET_CNOTE_NO"),
+	CONSTRAINT fk_drsheet_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES staging.cms_cnote("CNOTE_NO"),
+	CONSTRAINT fk_drsheet_mrsheet FOREIGN KEY ("DRSHEET_NO") REFERENCES staging.cms_mrsheet("MRSHEET_NO")
+);
+
+
+
+-- DROP FUNCTION staging.excel_to_ddmmyy(numeric);
+
+CREATE OR REPLACE FUNCTION staging.excel_to_ddmmyy(excel_date numeric)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+    IF excel_date IS NULL OR excel_date <= 0 THEN
+        RETURN NULL;
+    END IF;
+    RETURN TO_CHAR(
+        TIMESTAMP '1899-12-30 00:00:00' + (excel_date * INTERVAL '1 day'),
+        'DD/MM/YY'
+    );
+END;
+$function$
+;
+
+-- DROP FUNCTION staging.excel_to_ddmmyy_time(numeric);
+
+CREATE OR REPLACE FUNCTION staging.excel_to_ddmmyy_time(excel_date numeric)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+    IF excel_date IS NULL OR excel_date <= 0 THEN
+        RETURN NULL;
+    END IF;
+    RETURN TO_CHAR(
+        TIMESTAMP '1899-12-30 00:00:00' + (excel_date * INTERVAL '1 day'),
+        'DD/MM/YY HH24:MI'
+    );
+END;
+$function$
+;
+
+-- DROP FUNCTION staging.excel_to_timestamp(numeric);
+
+CREATE OR REPLACE FUNCTION staging.excel_to_timestamp(excel_date numeric)
+ RETURNS timestamp without time zone
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+    IF excel_date IS NULL OR excel_date <= 0 THEN
+        RETURN NULL;
+    END IF;
+    -- Excel epoch is 1899-12-30 (accounting for Excel's leap year bug)
+    -- The integer part is days, decimal part is time of day
+    RETURN TIMESTAMP '1899-12-30 00:00:00' + (excel_date * INTERVAL '1 day');
+END;
+$function$
+;
+
+-- DROP FUNCTION staging.format_date_ddmmyy(timestamp);
+
+CREATE OR REPLACE FUNCTION staging.format_date_ddmmyy(ts timestamp without time zone)
+ RETURNS text
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+    IF ts IS NULL THEN
+        RETURN NULL;
+    END IF;
+    RETURN TO_CHAR(ts, 'DD/MM/YY');
+END;
+$function$
+;
