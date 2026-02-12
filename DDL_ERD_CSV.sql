@@ -100,7 +100,7 @@ CREATE TABLE erd.cms_drourate (
 	"DROURATE_ETD_THRU" float8 NULL,
 	"DROURATE_TIME" text NULL,
 	"DROURATE_LINEHAUL_NEXT" float8 NULL,
-	"DROURATE_YES_LATE" time NULL,
+	"DROURATE_YES_LATE" text NULL,
 	CONSTRAINT cms_drourate_pkey PRIMARY KEY ("DROURATE_CODE", "DROURATE_SERVICE")
 );
 
@@ -594,8 +594,8 @@ CREATE TABLE erd.cms_cnote (
 	"CNOTE_TYPE_CUST" float8 NULL,
 	"CNOTE_PROTECT_ID" float8 NULL,
 	"CNOTE_ZIP_SEQ" float8 NULL,
-	CONSTRAINT cms_cnote_pkey PRIMARY KEY ("CNOTE_NO"),
-	CONSTRAINT fk_cnote_drourate FOREIGN KEY ("CNOTE_ROUTE_CODE","CNOTE_SERVICES_CODE") REFERENCES erd.cms_drourate("DROURATE_CODE","DROURATE_SERVICE")
+	CONSTRAINT cms_cnote_pkey PRIMARY KEY ("CNOTE_NO")
+	-- FK: ("CNOTE_ROUTE_CODE","CNOTE_SERVICES_CODE") REFERENCES erd.cms_drourate("DROURATE_CODE","DROURATE_SERVICE")
 );
 
 INSERT INTO erd.cms_cnote
@@ -648,8 +648,8 @@ CREATE TABLE erd.cms_cnote_amo (
 	"FIELDNUM4" float8 NULL,
 	"FIELDNUM5" float8 NULL,
 	"CDATE" float8 NULL,
-	CONSTRAINT cms_cnote_amo_pkey PRIMARY KEY ("CNOTE_NO"),
-	CONSTRAINT fk_cnote_amo_cnote FOREIGN KEY ("CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	CONSTRAINT cms_cnote_amo_pkey PRIMARY KEY ("CNOTE_NO")
+	-- FK: ("CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
 INSERT INTO erd.cms_cnote_amo
@@ -670,8 +670,8 @@ CREATE TABLE erd.cms_cnote_pod (
 	"CNOTE_POD_DELIVERED" text NULL,
 	"CNOTE_POD_DOC_NO" text NULL,
 	"CNOTE_POD_CREATION_DATE" float8 NULL,
-	CONSTRAINT cms_cnote_pod_pkey PRIMARY KEY ("CNOTE_POD_NO"),
-	CONSTRAINT fk_cnote_pod_cnote FOREIGN KEY ("CNOTE_POD_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	CONSTRAINT cms_cnote_pod_pkey PRIMARY KEY ("CNOTE_POD_NO")
+	-- FK: ("CNOTE_POD_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
 INSERT INTO erd.cms_cnote_pod
@@ -695,9 +695,9 @@ CREATE TABLE erd.cms_cost_dtransit_agen (
 	"ESB_TIME" timestamp NULL,
 	"ESB_ID" text NULL,
 	"DMANIFEST_DOC_REF" text NULL,
-	CONSTRAINT cms_cost_dtransit_agen_pkey PRIMARY KEY ("DMANIFEST_NO", "CNOTE_NO"),
-	CONSTRAINT fk_cost_d_cnote FOREIGN KEY ("CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_cost_d_cost_m FOREIGN KEY ("DMANIFEST_NO") REFERENCES erd.cms_cost_mtransit_agen("MANIFEST_NO")
+	CONSTRAINT cms_cost_dtransit_agen_pkey PRIMARY KEY ("DMANIFEST_NO", "CNOTE_NO")
+	-- FK: ("CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DMANIFEST_NO") REFERENCES erd.cms_cost_mtransit_agen("MANIFEST_NO")
 );
 
 INSERT INTO erd.cms_cost_dtransit_agen
@@ -721,8 +721,8 @@ CREATE TABLE erd.cms_dbag_ho (
 	"DBAG_CNOTE_SERVICE" text NULL,
 	"DBAG_CNOTE_DATE" float8 NULL,
 	"DBAG_ZONE_DEST" text NULL,
-	CONSTRAINT cms_dbag_ho_pkey PRIMARY KEY ("DBAG_NO", "DBAG_CNOTE_NO"),
-	CONSTRAINT fk_dbag_ho_cnote FOREIGN KEY ("DBAG_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	CONSTRAINT cms_dbag_ho_pkey PRIMARY KEY ("DBAG_NO", "DBAG_CNOTE_NO")
+	-- FK: ("DBAG_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
 INSERT INTO erd.cms_dbag_ho
@@ -744,8 +744,8 @@ CREATE TABLE erd.cms_dhi_hoc (
 	"CDATE" float8 NULL,
 	"DHI_REMARKS" float8 NULL,
 	"DHI_DO" text NULL,
-	CONSTRAINT cms_dhi_hoc_pkey PRIMARY KEY ("DHI_NO", "DHI_SEQ_NO"),
-	CONSTRAINT fk_dhi_hoc_mhi FOREIGN KEY ("DHI_NO") REFERENCES erd.cms_mhi_hoc("MHI_NO")
+	CONSTRAINT cms_dhi_hoc_pkey PRIMARY KEY ("DHI_NO", "DHI_SEQ_NO")
+	-- FK: ("DHI_NO") REFERENCES erd.cms_mhi_hoc("MHI_NO")
 );
 
 INSERT INTO erd.cms_dhi_hoc
@@ -764,9 +764,9 @@ CREATE TABLE erd.cms_dhicnote (
 	"DHICNOTE_QTY" int8 NULL,
 	"DHICNOTE_REMARKS" float8 NULL,
 	"DHICNOTE_TDATE" float8 NULL,
-	CONSTRAINT cms_dhicnote_pkey PRIMARY KEY ("DHICNOTE_NO", "DHICNOTE_SEQ_NO"),
-	CONSTRAINT fk_dhicnote_cnote FOREIGN KEY ("DHICNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_dhicnote_mhicnote FOREIGN KEY ("DHICNOTE_NO") REFERENCES erd.cms_mhicnote("MHICNOTE_NO")
+	CONSTRAINT cms_dhicnote_pkey PRIMARY KEY ("DHICNOTE_NO", "DHICNOTE_SEQ_NO")
+	-- FK: ("DHICNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DHICNOTE_NO") REFERENCES erd.cms_mhicnote("MHICNOTE_NO")
 );
 
 INSERT INTO erd.cms_dhicnote
@@ -791,9 +791,9 @@ CREATE TABLE erd.cms_dhocnote (
 	"DHOCNOTE_DEST" float8 NULL,
 	"DHOCNOTE_GOODS" float8 NULL,
 	"DHOCNOTE_HANDLING" float8 NULL,
-	CONSTRAINT cms_dhocnote_pkey PRIMARY KEY ("DHOCNOTE_NO", "DHOCNOTE_SEQ_NO"),
-	CONSTRAINT fk_dhocnote_cnote FOREIGN KEY ("DHOCNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_dhocnote_mhocnote FOREIGN KEY ("DHOCNOTE_NO") REFERENCES erd.cms_mhocnote("MHOCNOTE_NO")
+	CONSTRAINT cms_dhocnote_pkey PRIMARY KEY ("DHOCNOTE_NO", "DHOCNOTE_SEQ_NO")
+	-- FK: ("DHOCNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DHOCNOTE_NO") REFERENCES erd.cms_mhocnote("MHOCNOTE_NO")
 );
 
 INSERT INTO erd.cms_dhocnote
@@ -818,8 +818,8 @@ CREATE TABLE erd.cms_dhoundel_pod (
 	"DHOUNDEL_GOODS" float8 NULL,
 	"DHOUNDEL_HRS" text NULL,
 	"CREATE_DATE" float8 NULL,
-	CONSTRAINT fk_dhoundel_cnote FOREIGN KEY ("DHOUNDEL_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_dhoundel_mhoundel FOREIGN KEY ("DHOUNDEL_NO") REFERENCES erd.cms_mhoundel_pod("MHOUNDEL_NO")
+	-- FK: ("DHOUNDEL_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DHOUNDEL_NO") REFERENCES erd.cms_mhoundel_pod("MHOUNDEL_NO")
 );
 
 INSERT INTO erd.cms_dhoundel_pod
@@ -842,9 +842,9 @@ CREATE TABLE erd.cms_drcnote (
 	"DRCNOTE_FLAG" float8 NULL,
 	"DRCNOTE_PAYMENT" int8 NULL,
 	"DRCNOTE_DO" text NULL,
-	CONSTRAINT cms_drcnote_pkey PRIMARY KEY ("DRCNOTE_CNOTE_NO"),
-	CONSTRAINT fk_drcnote_cnote FOREIGN KEY ("DRCNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_drcnote_mrcnote FOREIGN KEY ("DRCNOTE_NO") REFERENCES erd.cms_mrcnote("MRCNOTE_NO")
+	CONSTRAINT cms_drcnote_pkey PRIMARY KEY ("DRCNOTE_CNOTE_NO")
+	-- FK: ("DRCNOTE_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DRCNOTE_NO") REFERENCES erd.cms_mrcnote("MRCNOTE_NO")
 );
 
 INSERT INTO erd.cms_drcnote
@@ -867,8 +867,8 @@ CREATE TABLE erd.cms_drsheet_pra (
 	"DRSHEET_UDATE" float8 NULL,
 	"CREATION_DATE" float8 NULL,
 	"DRSHEET_ZONE" float8 NULL,
-	CONSTRAINT cms_drsheet_pra_pkey PRIMARY KEY ("DRSHEET_CNOTE_NO"),
-	CONSTRAINT fk_drsheet_pra_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	CONSTRAINT cms_drsheet_pra_pkey PRIMARY KEY ("DRSHEET_CNOTE_NO")
+	-- FK: ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
 INSERT INTO erd.cms_drsheet_pra
@@ -886,8 +886,8 @@ CREATE TABLE erd.cms_dsj (
 	"DSJ_HVO_NO" text NOT NULL,
 	"DSJ_UID" text NULL,
 	"DSJ_CDATE" float8 NULL,
-	CONSTRAINT cms_dsj_pkey PRIMARY KEY ("DSJ_NO", "DSJ_BAG_NO", "DSJ_HVO_NO"),
-	CONSTRAINT fk_dsj_msj FOREIGN KEY ("DSJ_NO") REFERENCES erd.cms_msj("MSJ_NO")
+	CONSTRAINT cms_dsj_pkey PRIMARY KEY ("DSJ_NO", "DSJ_BAG_NO", "DSJ_HVO_NO")
+	-- FK: ("DSJ_NO") REFERENCES erd.cms_msj("MSJ_NO")
 );
 
 INSERT INTO erd.cms_dsj
@@ -913,8 +913,8 @@ CREATE TABLE erd.cms_dsmu (
 	"ESB_ID" text NULL,
 	"DSMU_MANIFEST_NO" float8 NULL,
 	"DSMU_POLICE_LICENSE_PLATE" text NULL,
-	CONSTRAINT cms_dsmu_pkey PRIMARY KEY ("DSMU_NO", "DSMU_BAG_NO"),
-	CONSTRAINT fk_dsmu_msmu FOREIGN KEY ("DSMU_NO") REFERENCES erd.cms_msmu("MSMU_NO")
+	CONSTRAINT cms_dsmu_pkey PRIMARY KEY ("DSMU_NO", "DSMU_BAG_NO")
+	-- FK: ("DSMU_NO") REFERENCES erd.cms_msmu("MSMU_NO")
 );
 
 INSERT INTO erd.cms_dsmu
@@ -948,9 +948,9 @@ CREATE TABLE erd.cms_mfcnote (
 	"MFCNOTE_MAN_DATE" float8 NULL,
 	"MFCNOTE_CRDATE" float8 NULL,
 	"MFCNOTE_ORIGIN" text NULL,
-	CONSTRAINT cms_mfcnote_pkey PRIMARY KEY ("MFCNOTE_MAN_NO", "MFCNOTE_NO"),
-	CONSTRAINT fk_mfcnote_cnote FOREIGN KEY ("MFCNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_mfcnote_manifest FOREIGN KEY ("MFCNOTE_MAN_NO") REFERENCES erd.cms_manifest("MANIFEST_NO")
+	CONSTRAINT cms_mfcnote_pkey PRIMARY KEY ("MFCNOTE_MAN_NO", "MFCNOTE_NO")
+	-- FK: ("MFCNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("MFCNOTE_MAN_NO") REFERENCES erd.cms_manifest("MANIFEST_NO")
 );
 
 INSERT INTO erd.cms_mfcnote
@@ -979,8 +979,8 @@ CREATE TABLE erd.cms_mrsheet (
 	"MRSHEET_INB_UID_DR" text NULL,
 	"MRSHEET_INB_UDATE_DR" float8 NULL,
 	"MRSHEET_ORIGIN" float8 NULL,
-	CONSTRAINT cms_mrsheet_pkey PRIMARY KEY ("MRSHEET_NO"),
-	CONSTRAINT fk_mrsheet_courier FOREIGN KEY ("MRSHEET_COURIER_ID") REFERENCES erd.lastmile_courier("COURIER_ID")
+	CONSTRAINT cms_mrsheet_pkey PRIMARY KEY ("MRSHEET_NO")
+	-- FK: ("MRSHEET_COURIER_ID") REFERENCES erd.lastmile_courier("COURIER_ID")
 );
 
 INSERT INTO erd.cms_mrsheet
@@ -1038,8 +1038,8 @@ CREATE TABLE erd.cms_apicust (
 	"APICUST_MERCHAN_ID" text NULL,
 	"APICUST_NAME" text NULL,
 	"SHIPPER_PROVIDER" text NULL,
-	CONSTRAINT cms_apicust_pkey PRIMARY KEY ("APICUST_ORDER_ID"),
-	CONSTRAINT fk_apicust_cnote FOREIGN KEY ("APICUST_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	CONSTRAINT cms_apicust_pkey PRIMARY KEY ("APICUST_ORDER_ID")
+	-- FK: ("APICUST_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
 );
 
 INSERT INTO erd.cms_apicust
@@ -1086,9 +1086,9 @@ CREATE TABLE erd.cms_dhov_rsheet (
 	"DHOV_DRSHEET_FLAG" float8 NULL,
 	"DHOV_DRSHEET_UID" float8 NULL,
 	"DHOV_DRSHEET_UDATE" float8 NULL,
-	CONSTRAINT cms_dhov_rsheet_pkey PRIMARY KEY ("DHOV_RSHEET_NO", "DHOV_RSHEET_CNOTE"),
-	CONSTRAINT fk_dhov_rsheet_cnote FOREIGN KEY ("DHOV_RSHEET_CNOTE") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_dhov_rsheet_mrsheet FOREIGN KEY ("DHOV_RSHEET_RSHEETNO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
+	CONSTRAINT cms_dhov_rsheet_pkey PRIMARY KEY ("DHOV_RSHEET_NO", "DHOV_RSHEET_CNOTE")
+	-- FK: ("DHOV_RSHEET_CNOTE") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DHOV_RSHEET_RSHEETNO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
 );
 
 INSERT INTO erd.cms_dhov_rsheet
@@ -1115,9 +1115,9 @@ CREATE TABLE erd.cms_drsheet (
 	"DRSHEET_UID" text NULL,
 	"DRSHEET_UDATE" float8 NULL,
 	"CREATION_DATE" float8 NULL,
-	CONSTRAINT cms_drsheet_pkey PRIMARY KEY ("DRSHEET_NO", "DRSHEET_CNOTE_NO"),
-	CONSTRAINT fk_drsheet_cnote FOREIGN KEY ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO"),
-	CONSTRAINT fk_drsheet_mrsheet FOREIGN KEY ("DRSHEET_NO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
+	CONSTRAINT cms_drsheet_pkey PRIMARY KEY ("DRSHEET_NO", "DRSHEET_CNOTE_NO")
+	-- FK: ("DRSHEET_CNOTE_NO") REFERENCES erd.cms_cnote("CNOTE_NO")
+	-- FK: ("DRSHEET_NO") REFERENCES erd.cms_mrsheet("MRSHEET_NO")
 );
 
 INSERT INTO erd.cms_drsheet
